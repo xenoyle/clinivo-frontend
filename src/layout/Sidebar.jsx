@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 
 function Sidebar({ isOpen, toggleSidebar }) {
     const location = useLocation();
-    const isActive = (path) => location.pathname === path ? "bg-primary" : "text-white";
+    const isActive = (path) => location.pathname === path ? "bg-primary text-white" : "text-white";
 
     const sidebarStyle = {
         width: isOpen ? "20rem" : "5rem",
@@ -25,31 +25,31 @@ function Sidebar({ isOpen, toggleSidebar }) {
                     ☰
                 </button>
             </div>
-            
-            {isOpen && <hr />}
 
-            <ul className="nav nav-pills flex-column mb-auto gap-2">
+            <hr />
+
+            <ul className="nav flex-column mb-auto gap-2">
                 <li className="nav-item">
                     <Link className={`nav-link ${isActive('/')}`} to="/">
-                        {isOpen && "Home"}
+                        {isOpen ? "Home" : <i className="bi bi-house"></i>}
                     </Link>
                 </li>
                 <li className="nav-item">
                     <Link className={`nav-link ${isActive('/patient-messages')}`} to="/patient-messages">
-                        {isOpen && "Messages"}
+                        {isOpen ? "Messages" : <i className="bi bi-envelope"></i>}
                     </Link>
                 </li>
                 <li className="nav-item">
                     <Link className={`nav-link ${isActive('/settings')}`} to="/settings">
-                        {isOpen && "Settings"}
+                        {isOpen ? "Settings" : <i className="bi bi-gear"></i>}
                     </Link>
                 </li>
             </ul>
 
-            {isOpen && <hr />}
+            <hr />
             
             <Link className="nav-link text-white p-1" to="/login">
-                {isOpen && "Logout"}
+                {isOpen ? "Logout" : <i className="bi bi-box-arrow-right"></i>}
             </Link>
         </nav>
     );
