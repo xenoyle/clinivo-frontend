@@ -9,6 +9,7 @@ import './App.css'
 import Navbar from "./layout/Navbar";
 
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 
 function App() {
   const [count, setCount] = useState(0)
@@ -19,8 +20,8 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
-          {/* <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          {/* <Route path="/register" element={<Register />} />
           <Route path="/logout-success" element={<LogoutSuccess />} /> */}
 
           {/* ✅ Protected Routes */}
