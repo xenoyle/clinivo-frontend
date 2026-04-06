@@ -1,0 +1,30 @@
+import React from 'react';
+
+export default function Settings() {
+  return (
+    <div className="container mt-4 text-start">
+      <h3>Account Settings</h3>
+      <div className="card mt-3 p-4 shadow-sm">
+        <h5>Security & Privacy</h5>
+        <hr />
+        <div className="mb-4">
+          <h6>Change Password</h6>
+          <button className="btn btn-outline-primary btn-sm">Update Password</button>
+        </div>
+        <div className="mb-4">
+          <h6>Two-Factor Authentication (2FA)</h6>
+          <p className="text-muted small">Add an extra layer of security to your account.</p>
+          <div className="form-check form-switch">
+            <input className="form-check-input" type="checkbox" id="2faSwitch" />
+            <label className="form-check-label" htmlFor="2faSwitch">Enable 2FA</label>
+          </div>
+        </div>
+        <div className="mb-2">
+          <h6>Session Settings</h6>
+          <p className="text-muted small">Automatically log out after 15 minutes of inactivity.</p>
+          <button className="btn btn-outline-danger btn-sm">Log Out of All Devices</button>
+        </div>
+      </div>
+    </div>
+  );
+}

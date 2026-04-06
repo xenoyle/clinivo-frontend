@@ -12,6 +12,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import PatientMessages from "./pages/PatientMessages";
 import ProviderMessages from "./pages/ProviderMessages";
+import Settings from "./pages/Settings";
 
 function App() {
   const [count, setCount] = useState(0)
@@ -25,6 +26,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/patient-messages" element={<PatientMessages />} />
           <Route path="/provider-messages" element={<ProviderMessages />} />
+          <Route path="/settings" element={<Settings />} />
 
           {/* ✅ Protected Routes */}
           {/* <Route path="/ROUTE HERE" element={<ProtectedRoute element={PAGE HERE} requiredRoles={["ROLE HERE"]} />} />
