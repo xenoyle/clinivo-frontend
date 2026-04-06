@@ -1,28 +1,35 @@
 import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import './App.css'
 
 
-import Navbar from "./layout/Navbar";
+import Sidebar from "./layout/Sidebar";
 
-import Home from "./pages/Home";
 import Login from "./pages/Login";
+
 import PatientMessages from "./pages/PatientMessages";
 import ProviderMessages from "./pages/ProviderMessages";
 import Settings from "./pages/Settings";
 
-function App() {
-  const [count, setCount] = useState(0)
+// Separate component to use useLocation hook for conditional rendering of Sidebar
+function AppContent() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const location = useLocation();
 
+  const noSidebarPaths = ["/", "/login"]; // Add any other paths where you don't want Sidebar (probably register and forgot password)
+  const showSidebar = !noSidebarPaths.includes(location.pathname);
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   return (
-    <div className="App">
-      <Router>
-        <Navbar />
+    <div className="app-container" style={{ display: 'flex', minHeight: '100vh' }}>
+      {showSidebar && (
+        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+      )}
+      
+      <main className="main-content" style={{ flexGrow: 1 }}>
+        
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/patient-messages" element={<PatientMessages />} />
           <Route path="/provider-messages" element={<ProviderMessages />} />
@@ -35,9 +42,17 @@ function App() {
           {/* ✅ Public Route (ViewUser should be accessible to all users, including guests) */}
           {/* <Route path="/ROUTE HERE/:id" element={PAGE HERE} /> */}
         </Routes>
-      </Router>
+      </main>
     </div>
   );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  )
 }
 
 export default App
