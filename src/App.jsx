@@ -8,7 +8,6 @@ import './App.css'
 
 import Navbar from "./layout/Navbar";
 
-import Home from "./pages/Home";
 import Login from "./pages/Login";
 import PatientMessages from "./pages/PatientMessages";
 import ProviderMessages from "./pages/ProviderMessages";
@@ -22,7 +21,7 @@ function App() {
       <Router>
         <Navbar />
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/patient-messages" element={<PatientMessages />} />
           <Route path="/provider-messages" element={<ProviderMessages />} />
