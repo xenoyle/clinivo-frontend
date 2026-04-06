@@ -108,3 +108,16 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+.app-container {
+  overflow-x: hidden;
+}
+
+.main-content {
+  position: relative;
+  width: 100%;
+}
+
+.nav-link {
+  transition: background-color 0.2s ease;
+}
