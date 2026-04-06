@@ -10,6 +10,8 @@ import Navbar from "./layout/Navbar";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import PatientMessages from "./pages/PatientMessages";
+import ProviderMessages from "./pages/ProviderMessages";
 
 function App() {
   const [count, setCount] = useState(0)
@@ -21,8 +23,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          {/* <Route path="/register" element={<Register />} />
-          <Route path="/logout-success" element={<LogoutSuccess />} /> */}
+          <Route path="/patient-messages" element={<PatientMessages />} />
+          <Route path="/provider-messages" element={<ProviderMessages />} />
 
           {/* ✅ Protected Routes */}
           {/* <Route path="/ROUTE HERE" element={<ProtectedRoute element={PAGE HERE} requiredRoles={["ROLE HERE"]} />} />
