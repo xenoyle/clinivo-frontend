@@ -25,9 +25,9 @@ function AppContent() {
       {showSidebar && (
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       )}
-      
+
       <main className="main-content" style={{ flexGrow: 1 }}>
-        
+
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
