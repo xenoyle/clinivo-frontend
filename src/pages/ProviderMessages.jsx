@@ -8,8 +8,14 @@ export default function ProviderMessages() {
   const [inputText, setInputText] = useState("");
 
   const chatRef = useRef(null);
+  const conversationIdRef = useRef(null); // ⭐ NEW
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
+
+  // Keep ref updated
+  useEffect(() => {
+    conversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
 
   // Load doctor's conversations
   useEffect(() => {
@@ -52,7 +58,7 @@ export default function ProviderMessages() {
     connectWebSocket(currentUser.id, (msg) => {
       console.log("Doctor WS received:", msg);
 
-      if (msg.conversationId === activeConversationId) {
+      if (msg.conversationId === conversationIdRef.current) {
         setMessages((prev) => [...prev, msg]);
       }
     });

@@ -7,12 +7,18 @@ export default function PatientMessages() {
   const [inputText, setInputText] = useState("");
 
   const chatRef = useRef(null);
+  const conversationIdRef = useRef(null); // ⭐ NEW
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
   if (!currentUser) {
     return <div>Please log in.</div>;
   }
+
+  // Keep ref updated
+  useEffect(() => {
+    conversationIdRef.current = conversationId;
+  }, [conversationId]);
 
   // Load patient's conversation
   useEffect(() => {
@@ -49,7 +55,7 @@ export default function PatientMessages() {
     connectWebSocket(currentUser.id, (msg) => {
       console.log("Patient WS received:", msg);
 
-      if (msg.conversationId === conversationId) {
+      if (msg.conversationId === conversationIdRef.current) {
         setMessages((prev) => [...prev, msg]);
       }
     });
