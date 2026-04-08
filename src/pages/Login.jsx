@@ -31,7 +31,7 @@ export default function Login() {
           </form>
           <hr />
           <p className="text-center">Don't have an account?</p>
-          <button onClick={() => navigate('/settings')} className="btn btn-outline-secondary w-100">Create Account</button>
+          <button onClick={() => navigate('/register')} className="btn btn-outline-secondary w-100">Create Account</button>
         </div>
       </div>
     </div>
