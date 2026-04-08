@@ -1,11 +1,15 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function ProviderMessages() {
   return (
     <div className="container-fluid mt-3">
       <div className="row" style={{ height: '80vh' }}>
-        {/* Patient Sidebar */}
         <div className="col-md-3 border-end d-flex flex-column">
+          <div className="p-2 d-flex justify-content-between align-items-center">
+            <h6 className="mb-0">Patients</h6>
+            <Link to="/settings" className="btn btn-sm btn-outline-secondary">⚙️</Link>
+          </div>
           <div className="p-2">
             <input type="text" className="form-control mb-2" placeholder="Search patients..." />
           </div>
@@ -17,17 +21,13 @@ export default function ProviderMessages() {
               </div>
             </button>
             <button className="list-group-item list-group-item-action">Alice Smith</button>
-            <button className="list-group-item list-group-item-action text-muted">Pending: Bob Ross</button>
           </div>
         </div>
-
-        {/* Chatbox Area */}
         <div className="col-md-9 d-flex flex-column">
           <div className="p-3 border-bottom bg-white">
             <h5 className="mb-0">Jim Bob</h5>
             <small className="text-success">Verified Patient</small>
           </div>
-
           <div className="flex-grow-1 bg-light p-3 overflow-auto" style={{ display: 'flex', flexDirection: 'column' }}>
             <div className="align-self-start bg-primary text-white p-2 rounded mb-2" style={{ maxWidth: '60%' }}>
               <p className="mb-0">Jim, did you receive the notification for your next appointment?</p>
@@ -36,10 +36,9 @@ export default function ProviderMessages() {
               <p className="mb-0">Yes, I got the alert on my phone. Thanks!</p>
             </div>
           </div>
-
           <div className="p-3 border-top bg-white">
             <div className="input-group">
-              <input type="text" className="form-control" placeholder="Type instructions or reply..." />
+              <input type="text" className="form-control" placeholder="Type instructions..." />
               <button className="btn btn-dark">Send Message</button>
             </div>
           </div>
