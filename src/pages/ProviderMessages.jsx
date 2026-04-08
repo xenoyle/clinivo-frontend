@@ -8,11 +8,10 @@ export default function ProviderMessages() {
   const [inputText, setInputText] = useState("");
 
   const chatRef = useRef(null);
-  const conversationIdRef = useRef(null); // ⭐ NEW
+  const conversationIdRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  // Keep ref updated
   useEffect(() => {
     conversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
@@ -62,7 +61,7 @@ export default function ProviderMessages() {
         setMessages((prev) => [...prev, msg]);
       }
     });
-  }, []); // IMPORTANT
+  }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -77,6 +76,10 @@ export default function ProviderMessages() {
     sendMessageWS(activeConversationId, currentUser.id, inputText);
     setInputText("");
   };
+
+  const activeConversation = conversations.find(
+    (c) => c.id === activeConversationId
+  );
 
   return (
     <div className="container-fluid mt-3">
@@ -101,7 +104,9 @@ export default function ProviderMessages() {
                     }`}
                   onClick={() => setActiveConversationId(c.id)}
                 >
-                  <strong>Patient Conversation #{c.id}</strong>
+                  <strong>
+                    {c.patient?.firstName} {c.patient?.lastName}
+                  </strong>
                 </button>
               ))}
           </div>
@@ -110,13 +115,21 @@ export default function ProviderMessages() {
         {/* Chatbox Area */}
         <div className="col-md-9 d-flex flex-column">
           <div className="p-3 border-bottom bg-white">
-            <h5 className="mb-0">Conversation #{activeConversationId}</h5>
+            <h5 className="mb-0">
+              {activeConversation?.patient?.firstName}{" "}
+              {activeConversation?.patient?.lastName}
+            </h5>
           </div>
 
           <div
             ref={chatRef}
-            className="flex-grow-1 bg-light p-3 overflow-auto"
-            style={{ display: "flex", flexDirection: "column" }}
+            className="card-body bg-light"
+            style={{
+              height: "400px",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+            }}
           >
             {messages.map((m) => (
               <div

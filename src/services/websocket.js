@@ -1,39 +1,41 @@
 import SockJS from "sockjs-client";
-import { over } from "stompjs";
+import Stomp from "stompjs";
 
 let stompClient = null;
 
-export const connectWebSocket = (userId, onMessageReceived) => {
-    if (stompClient) {
+export function connectWebSocket(userId, onMessage) {
+    if (stompClient && stompClient.connected) {
         console.log("WebSocket already connected");
         return;
     }
 
     console.log("Opening Web Socket...");
-
     const socket = new SockJS("http://localhost:8080/ws");
-    stompClient = over(socket);
+    stompClient = Stomp.over(socket);
 
     stompClient.connect({}, () => {
-        console.log("WebSocket connected");
-        console.log("Subscribed to:", `/topic/messages/${userId}`);
+        console.log("Web Socket Opened...");
 
+        // Listen for messages for this user
         stompClient.subscribe(`/topic/messages/${userId}`, (message) => {
             const msg = JSON.parse(message.body);
-            onMessageReceived(msg);
+            console.log("WS message received:", msg);
+            onMessage(msg);
         });
     });
-};
+}
 
-export const sendMessageWS = (conversationId, senderId, content) => {
-    if (!stompClient) {
-        console.error("WebSocket not connected");
+export function sendMessageWS(conversationId, senderId, content) {
+    if (!stompClient || !stompClient.connected) {
+        console.error("WebSocket not connected, cannot send");
         return;
     }
 
+    console.log("WS sending:", { conversationId, senderId, content });
+
     stompClient.send(
-        "/app/sendMessage",
+        "/app/sendMessage",          // 🔥 match @MessageMapping("/sendMessage")
         {},
         JSON.stringify({ conversationId, senderId, content })
     );
-};
+}
