@@ -6,6 +6,7 @@ import Sidebar from "./layout/Sidebar";
 
 // Import Page Components
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import PatientMessages from "./pages/PatientMessages";
 import ProviderMessages from "./pages/ProviderMessages";
 import Settings from "./pages/Settings";
@@ -19,7 +20,7 @@ function AppContent() {
   const location = useLocation();
 
   // Define paths where the Sidebar should NOT appear (Login/Landing)
-  const noSidebarPaths = ["/", "/login"]; 
+  const noSidebarPaths = ["/", "/login", "/register"]; 
   const showSidebar = !noSidebarPaths.includes(location.pathname);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -36,6 +37,7 @@ function AppContent() {
           {/* Public Routes */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           {/* Connected App Routes */}
           <Route path="/patient-messages" element={<PatientMessages />} />
