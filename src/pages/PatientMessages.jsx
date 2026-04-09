@@ -122,6 +122,9 @@ export default function PatientMessages() {
           </div>
         </div>
       </div>
+      <div className="text-center mt-3">
+        <Link to="/provider" className="text-muted small">Switch to Provider View (Demo Only)</Link>
+      </div>
     </div>
   );
 }

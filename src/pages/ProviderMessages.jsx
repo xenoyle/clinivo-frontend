@@ -87,6 +87,10 @@ export default function ProviderMessages() {
 
         {/* Patient Sidebar */}
         <div className="col-md-3 border-end d-flex flex-column">
+          <div className="p-2 d-flex justify-content-between align-items-center">
+            <h6 className="mb-0">Patients</h6>
+            <Link to="/settings" className="btn btn-sm btn-outline-secondary">⚙️</Link>
+          </div>
           <div className="p-2">
             <input
               type="text"
@@ -111,8 +115,6 @@ export default function ProviderMessages() {
               ))}
           </div>
         </div>
-
-        {/* Chatbox Area */}
         <div className="col-md-9 d-flex flex-column">
           <div className="p-3 border-bottom bg-white">
             <h5 className="mb-0">
@@ -145,7 +147,6 @@ export default function ProviderMessages() {
               </div>
             ))}
           </div>
-
           <div className="p-3 border-top bg-white">
             <div className="input-group">
               <input
