@@ -19,6 +19,16 @@ export const getUserConversations = async (userId) => {
   return res.data;
 };
 
+export const getPatientConversation = async (patientId) => {
+  const res = await api.get(`/conversations/patient/${patientId}`);
+  return res.data;
+};
+
+export const getProviderConversation = async (providerId) => {
+  const res = await api.get(`/conversations/provider/${providerId}`);
+  return res.data;
+}
+
 // MESSAGES
 export const getMessages = async (conversationId) => {
   const res = await api.get(`/messages/conversation/${conversationId}`);

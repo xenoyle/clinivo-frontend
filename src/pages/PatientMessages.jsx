@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
+import { getMessages, getPatientConversation } from "../api/api";
 
 export default function PatientMessages() {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const [inputText, setInputText] = useState("");
+  const [error, setError] = useState(null);
 
   const chatRef = useRef(null);
-  const conversationIdRef = useRef(null); // ⭐ NEW
+  const conversationIdRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
@@ -22,33 +24,39 @@ export default function PatientMessages() {
 
   // Load patient's conversation
   useEffect(() => {
-    const endpoint = `http://localhost:8080/api/conversations/patient/${currentUser.id}`;
-
-    fetch(endpoint)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Patient conversations:", data);
+    // Async wrapper
+    const loadConversation = async () => {
+      try {
+        const data = await getPatientConversation(currentUser.id);
+        
         if (data && data.id) {
           setConversationId(data.id);
         }
-      })
-      .catch((err) => console.error("Conversation fetch error:", err));
+      } catch (error) {
+        console.error("Conversation fetch error:", error);
+        setError("Failed to fetch conversation.");
+      }
+    };
+
+    loadConversation();
   }, []);
 
   // Load messages when conversationId is ready
   useEffect(() => {
-    if (!conversationId) return;
 
-    console.log("Active conversation ID:", conversationId);
-
-    fetch(`http://localhost:8080/api/messages/conversation/${conversationId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Loaded messages:", data);
+    // Async wrapper
+    const loadMessages = async () => {
+      try {
+        const data = await getMessages(currentUser.id);
         setMessages(data);
-      })
-      .catch((err) => console.error("Message fetch error:", err));
-  }, [conversationId]);
+      } catch (error) {
+        console.error("Messages fetch error:", error);
+        setError("Failed to fetch messages.");
+      }
+    };
+
+    loadMessages();
+  }, []);
 
   // Connect WebSocket ONCE
   useEffect(() => {
