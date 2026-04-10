@@ -43,7 +43,9 @@ export default function ProviderMessages() {
 
     console.log("Active conversation ID:", activeConversationId);
 
-    fetch(`http://localhost:8080/api/messages/conversation/${activeConversationId}`)
+    fetch(
+      `http://localhost:8080/api/messages/conversation/${activeConversationId}`,
+    )
       .then((res) => res.json())
       .then((data) => {
         console.log("Loaded messages:", data);
@@ -78,18 +80,19 @@ export default function ProviderMessages() {
   };
 
   const activeConversation = conversations.find(
-    (c) => c.id === activeConversationId
+    (c) => c.id === activeConversationId,
   );
 
   return (
     <div className="container-fluid mt-3">
       <div className="row" style={{ height: "80vh" }}>
-
         {/* Patient Sidebar */}
         <div className="col-md-3 border-end d-flex flex-column">
           <div className="p-2 d-flex justify-content-between align-items-center">
             <h6 className="mb-0">Patients</h6>
-            <Link to="/settings" className="btn btn-sm btn-outline-secondary">⚙️</Link>
+            <Link to="/settings" className="btn btn-sm btn-outline-secondary">
+              ⚙️
+            </Link>
           </div>
           <div className="p-2">
             <input
@@ -104,8 +107,9 @@ export default function ProviderMessages() {
               conversations.map((c) => (
                 <button
                   key={c.id}
-                  className={`list-group-item list-group-item-action ${activeConversationId === c.id ? "active" : ""
-                    }`}
+                  className={`list-group-item list-group-item-action ${
+                    activeConversationId === c.id ? "active" : ""
+                  }`}
                   onClick={() => setActiveConversationId(c.id)}
                 >
                   <strong>
@@ -161,7 +165,6 @@ export default function ProviderMessages() {
               </button>
             </div>
           </div>
-
         </div>
       </div>
     </div>

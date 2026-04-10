@@ -25,7 +25,7 @@ export default function PatientMessages() {
     const loadConversation = async () => {
       try {
         const data = await getPatientConversation(currentUser.id);
-        
+
         if (data && data.id) {
           setConversationId(data.id);
         }
@@ -87,10 +87,8 @@ export default function PatientMessages() {
 
   return (
     <div className="container mt-4">
-      
       {error && <div className="alert alert-danger">{error}</div>}
-      
-      
+
       <div className="card shadow-sm mx-auto" style={{ maxWidth: "600px" }}>
         <div className="card-header bg-primary text-white">
           Chat with Your Doctor
@@ -137,7 +135,9 @@ export default function PatientMessages() {
         </div>
       </div>
       <div className="text-center mt-3">
-        <Link to="/provider" className="text-muted small">Switch to Provider View (Demo Only)</Link>
+        <Link to="/provider" className="text-muted small">
+          Switch to Provider View (Demo Only)
+        </Link>
       </div>
     </div>
   );
