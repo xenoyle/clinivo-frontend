@@ -2,8 +2,8 @@ import api from "./axios";
 
 // USERS
 export const loginUser = async (email, password) => {
-  const res = await api.get("/users");
-  return res.data.find((u) => u.email === email && u.password === password);
+  const res = await api.post("/users/login", { email, password });
+  return res.data;
 };
 
 export const createUser = async (userData) => {
@@ -17,18 +17,13 @@ export const createConversation = async (userIds) => {
   return res.data;
 };
 
-export const getUserConversations = async (userId) => {
-  const res = await api.get(`/conversations/user/${userId}`);
-  return res.data;
-};
-
 export const getPatientConversation = async (patientId) => {
   const res = await api.get(`/conversations/patient/${patientId}`);
   return res.data;
 };
 
-export const getProviderConversation = async (providerId) => {
-  const res = await api.get(`/conversations/provider/${providerId}`);
+export const getDoctorConversations = async (doctorId) => {
+  const res = await api.get(`/conversations/doctor/${doctorId}`);
   return res.data;
 };
 

@@ -13,7 +13,7 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const data = await loginUser({ email: email, password: password });
+      const data = await loginUser(email, password);
       if (!data) {
         setError("Invalid email or password.");
         return;
@@ -26,10 +26,10 @@ export default function Login() {
     }
 
     const user = JSON.parse(localStorage.getItem("user"));
-    if (user.role === "patient") {
+    if (user.role === "PATIENT") {
       navigate("/patient-messages");
-    } else if (user.role === "provider") {
-      navigate("/provider-messages");
+    } else if (user.role === "DOCTOR") {
+      navigate("/doctor-messages");
     } else {
       setError("Unknown user role.");
     }

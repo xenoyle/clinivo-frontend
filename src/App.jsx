@@ -8,7 +8,7 @@ import Sidebar from "./layout/Sidebar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PatientMessages from "./pages/PatientMessages";
-import ProviderMessages from "./pages/ProviderMessages";
+import DoctorMessages from "./pages/DoctorMessages";
 import Settings from "./pages/Settings";
 
 /**
@@ -41,7 +41,7 @@ function AppContent() {
 
           {/* Connected App Routes */}
           <Route path="/patient-messages" element={<PatientMessages />} />
-          <Route path="/provider-messages" element={<ProviderMessages />} />
+          <Route path="/doctor-messages" element={<DoctorMessages />} />
           <Route path="/settings" element={<Settings />} />
 
           {/* Optional: Catch-all route to redirect unknown URLs back to login 
