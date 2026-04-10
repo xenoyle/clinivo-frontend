@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
+import { getMessages, getDoctorConversations } from "../api/api";
+import { Link } from "react-router-dom";
 
-export default function ProviderMessages() {
+export default function DoctorMessages() {
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
+  const [error, setError] = useState(null);
 
   const chatRef = useRef(null);
   const conversationIdRef = useRef(null);
@@ -18,10 +21,10 @@ export default function ProviderMessages() {
 
   // Load doctor's conversations
   useEffect(() => {
-    fetch(`http://localhost:8080/api/conversations/doctor/${currentUser.id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Provider conversations:", data);
+    // Async wrapper
+    const loadConversations = async () => {
+      try {
+        const data = await getDoctorConversations(currentUser.id);
 
         if (Array.isArray(data)) {
           setConversations(data);
@@ -33,23 +36,31 @@ export default function ProviderMessages() {
           console.error("Expected array but got:", data);
           setConversations([]);
         }
-      })
-      .catch((err) => console.error("Conversation fetch error:", err));
+      } catch (err) {
+        console.error("Conversation fetch error:", err);
+        setError("Failed to fetch conversations.");
+      }
+    };
+    
+    loadConversations();
   }, []);
 
-  // Load messages for selected conversation
+  // Load messages for selected doctor conversation
   useEffect(() => {
     if (!activeConversationId) return;
-
-    console.log("Active conversation ID:", activeConversationId);
-
-    fetch(`http://localhost:8080/api/messages/conversation/${activeConversationId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Loaded messages:", data);
-        setMessages(data);
-      })
-      .catch((err) => console.error("Message fetch error:", err));
+    
+        // Async wrapper
+        const loadMessages = async () => {
+          try {
+            const data = await getMessages(activeConversationId);
+            setMessages(data);
+          } catch (err) {
+            console.error("Messages fetch error:", err);
+            setError("Failed to fetch messages.");
+          }
+        };
+    
+        loadMessages();
   }, [activeConversationId]);
 
   // Connect WebSocket ONCE
@@ -78,18 +89,19 @@ export default function ProviderMessages() {
   };
 
   const activeConversation = conversations.find(
-    (c) => c.id === activeConversationId
+    (c) => c.id === activeConversationId,
   );
 
   return (
     <div className="container-fluid mt-3">
       <div className="row" style={{ height: "80vh" }}>
-
         {/* Patient Sidebar */}
         <div className="col-md-3 border-end d-flex flex-column">
           <div className="p-2 d-flex justify-content-between align-items-center">
             <h6 className="mb-0">Patients</h6>
-            <Link to="/settings" className="btn btn-sm btn-outline-secondary">⚙️</Link>
+            <Link to="/settings" className="btn btn-sm btn-outline-secondary">
+              ⚙️
+            </Link>
           </div>
           <div className="p-2">
             <input
@@ -104,8 +116,9 @@ export default function ProviderMessages() {
               conversations.map((c) => (
                 <button
                   key={c.id}
-                  className={`list-group-item list-group-item-action ${activeConversationId === c.id ? "active" : ""
-                    }`}
+                  className={`list-group-item list-group-item-action ${
+                    activeConversationId === c.id ? "active" : ""
+                  }`}
                   onClick={() => setActiveConversationId(c.id)}
                 >
                   <strong>
@@ -160,8 +173,8 @@ export default function ProviderMessages() {
                 Send Message
               </button>
             </div>
+            {error && <div className="alert alert-danger mt-2">{error}</div>}
           </div>
-
         </div>
       </div>
     </div>
