@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
 import { getMessages, getPatientConversation } from "../api/api";
+import { Link } from "react-router-dom";
 
 export default function PatientMessages() {
   const [messages, setMessages] = useState([]);
@@ -12,10 +13,6 @@ export default function PatientMessages() {
   const conversationIdRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
-
-  if (!currentUser) {
-    return <div>Please log in.</div>;
-  }
 
   // Keep ref updated
   useEffect(() => {
@@ -32,8 +29,8 @@ export default function PatientMessages() {
         if (data && data.id) {
           setConversationId(data.id);
         }
-      } catch (error) {
-        console.error("Conversation fetch error:", error);
+      } catch (err) {
+        console.error("Conversation fetch error:", err);
         setError("Failed to fetch conversation.");
       }
     };
@@ -43,20 +40,21 @@ export default function PatientMessages() {
 
   // Load messages when conversationId is ready
   useEffect(() => {
+    if (!conversationId) return;
 
     // Async wrapper
     const loadMessages = async () => {
       try {
-        const data = await getMessages(currentUser.id);
+        const data = await getMessages(conversationId);
         setMessages(data);
-      } catch (error) {
-        console.error("Messages fetch error:", error);
+      } catch (err) {
+        console.error("Messages fetch error:", err);
         setError("Failed to fetch messages.");
       }
     };
 
     loadMessages();
-  }, []);
+  }, [conversationId]);
 
   // Connect WebSocket ONCE
   useEffect(() => {
@@ -83,8 +81,16 @@ export default function PatientMessages() {
     setInputText("");
   };
 
+  if (!currentUser) {
+    return <div>Please log in.</div>;
+  }
+
   return (
     <div className="container mt-4">
+      
+      {error && <div className="alert alert-danger">{error}</div>}
+      
+      
       <div className="card shadow-sm mx-auto" style={{ maxWidth: "600px" }}>
         <div className="card-header bg-primary text-white">
           Chat with Your Doctor
