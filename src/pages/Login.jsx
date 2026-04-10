@@ -14,6 +14,10 @@ export default function Login() {
   
     try {
       const data = await loginUser(email, password);
+      if (!data) {
+        setError("Invalid email or password.");
+        return;
+      }
       localStorage.setItem("user", JSON.stringify(data));
     } catch (err) {
       console.error("Login error:", err);
@@ -23,9 +27,9 @@ export default function Login() {
     
     const user = JSON.parse(localStorage.getItem("user"));
     if (user.role === "patient") {
-      navigate("/patient/messages");
+      navigate("/patient-messages");
     } else if (user.role === "provider") {
-      navigate("/provider/messages");
+      navigate("/provider-messages");
     } else {
       setError("Unknown user role.");
     }
