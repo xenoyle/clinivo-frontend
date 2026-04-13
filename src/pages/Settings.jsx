@@ -1,9 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Settings() {
+  const navigate = useNavigate();
+
   return (
     <div className="container mt-4 text-start">
-      <h3>Account Settings</h3>
+      <div className="d-flex justify-content-between align-items-center">
+        <h3>Account Settings</h3>
+        <button onClick={() => navigate(-1)} className="btn btn-sm btn-secondary">Go Back</button>
+      </div>
       <div className="card mt-3 p-4 shadow-sm">
         <h5>Security & Privacy</h5>
         <hr />
@@ -22,7 +28,7 @@ export default function Settings() {
         <div className="mb-2">
           <h6>Session Settings</h6>
           <p className="text-muted small">Automatically log out after 15 minutes of inactivity.</p>
-          <button className="btn btn-outline-danger btn-sm">Log Out of All Devices</button>
+          <button onClick={() => navigate('/login')} className="btn btn-outline-danger btn-sm">Log Out of All Devices</button>
         </div>
       </div>
     </div>

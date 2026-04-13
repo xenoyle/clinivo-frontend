@@ -1,43 +1,67 @@
-import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
-
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import './App.css';
 
 import Navbar from "./layout/Navbar";
 
-import Home from "./pages/Home";
+// Import Page Components
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import PatientMessages from "./pages/PatientMessages";
-import ProviderMessages from "./pages/ProviderMessages";
+import DoctorMessages from "./pages/DoctorMessages";
 import Settings from "./pages/Settings";
 
-function App() {
-  const [count, setCount] = useState(0)
+/**
+ * AppContent handles the conditional logic for the UI.
+ * It uses useLocation to determine if the Sidebar should be visible.
+ */
+function AppContent() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const location = useLocation();
+
+  // Define paths where the Sidebar should NOT appear (Login/Landing)
+  const noSidebarPaths = ["/", "/login", "/register"]; 
+  const showSidebar = !noSidebarPaths.includes(location.pathname);
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className="App">
-      <Router>
-        <Navbar />
+    <div className="app-container" style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Sidebar only renders if showSidebar is true */}
+      {showSidebar && (
+        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+      )}
+      
+      <main className="main-content" style={{ flexGrow: 1, overflowX: 'hidden' }}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          {/* Public Routes */}
+          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Connected App Routes */}
           <Route path="/patient-messages" element={<PatientMessages />} />
-          <Route path="/provider-messages" element={<ProviderMessages />} />
+          <Route path="/doctor-messages" element={<DoctorMessages />} />
           <Route path="/settings" element={<Settings />} />
 
-          {/* ✅ Protected Routes */}
-          {/* <Route path="/ROUTE HERE" element={<ProtectedRoute element={PAGE HERE} requiredRoles={["ROLE HERE"]} />} />
-          <Route path="/ROUTE HERE/:id" element={<ProtectedRoute element={PAGE HERE} requiredRoles={["ROLE HERE", "ROLE HERE"]} />} /> */}
-
-          {/* ✅ Public Route (ViewUser should be accessible to all users, including guests) */}
-          {/* <Route path="/ROUTE HERE/:id" element={PAGE HERE} /> */}
+          {/* Optional: Catch-all route to redirect unknown URLs back to login 
+            <Route path="*" element={<Navigate to="/login" />} />
+          */}
         </Routes>
-      </Router>
+      </main>
     </div>
   );
 }
 
-export default App
+/**
+ * App is the root component that provides the Router context.
+ */
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}
+
+export default App;
