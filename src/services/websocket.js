@@ -4,7 +4,7 @@ import Stomp from "stompjs";
 let stompClient = null;
 let isConnected = false;
 
-export function connectWebSocket(userId, onMessage) {
+export function connectWebSocket(userId, onMessage, onRead) {
     if (isConnected) {
         console.log("WebSocket already connected — skipping");
         return;
@@ -23,7 +23,16 @@ export function connectWebSocket(userId, onMessage) {
             console.log("WS message received:", msg);
             onMessage(msg);
         });
+        stompClient.subscribe(`/topic/read/${userId}`, (message) => {
+            const conversationId = JSON.parse(message.body);
+            console.log("Read receipt received:", conversationId);
+
+            if (onRead) {
+                onRead(conversationId);
+            }
+        });
     });
+
 }
 
 export function sendMessageWS(conversationId, senderId, content) {

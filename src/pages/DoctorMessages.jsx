@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
 import { getMessages, getDoctorConversations } from "../api/api";
 import { Link } from "react-router-dom";
+import { markMessagesAsRead } from "../api/api";
 
 export default function DoctorMessages() {
   const [conversations, setConversations] = useState([]);
@@ -52,8 +53,10 @@ export default function DoctorMessages() {
         // Async wrapper
         const loadMessages = async () => {
           try {
-            const data = await getMessages(activeConversationId);
+            const data = await getMessages(activeConversationId, currentUser.id);
             setMessages(data);
+            await markMessagesAsRead(activeConversationId, currentUser.id);
+
           } catch (err) {
             console.error("Messages fetch error:", err);
             setError("Failed to fetch messages.");
@@ -70,6 +73,8 @@ export default function DoctorMessages() {
 
       if (msg.conversationId === conversationIdRef.current) {
         setMessages((prev) => [...prev, msg]);
+
+        markMessagesAsRead(msg.conversationId, currentUser.id);
       }
     });
   }, []);
@@ -157,6 +162,9 @@ export default function DoctorMessages() {
                 style={{ maxWidth: "60%" }}
               >
                 <p className="mb-0">{m.content}</p>
+                {m.senderId === currentUser.id && m.isRead && (
+      <small className="text-light d-block mt-1">Seen</small>
+    )}
               </div>
             ))}
           </div>

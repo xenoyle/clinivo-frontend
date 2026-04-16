@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
 import { getMessages, getPatientConversation } from "../api/api";
 import { Link } from "react-router-dom";
+import { markMessagesAsRead } from "../api/api";
 
 export default function PatientMessages() {
   const [messages, setMessages] = useState([]);
@@ -45,8 +46,10 @@ export default function PatientMessages() {
     // Async wrapper
     const loadMessages = async () => {
       try {
-        const data = await getMessages(conversationId);
-        setMessages(data);
+        await markMessagesAsRead(conversationId, currentUser.id);
+
+        const updated = await getMessages(conversationId, currentUser.id);
+        setMessages(updated);
       } catch (err) {
         console.error("Messages fetch error:", err);
         setError("Failed to fetch messages.");
@@ -63,8 +66,16 @@ export default function PatientMessages() {
 
       if (msg.conversationId === conversationIdRef.current) {
         setMessages((prev) => [...prev, msg]);
+        markMessagesAsRead(msg.conversationId, currentUser.id);
       }
-    });
+    },
+      async (convId) => {
+        if (convId === conversationIdRef.current) {
+          const updated = await getMessages(convId, currentUser.id);
+          setMessages(updated);
+        }
+      }
+    );
   }, []); // IMPORTANT
 
   // Auto-scroll
@@ -115,6 +126,10 @@ export default function PatientMessages() {
               style={{ maxWidth: "75%" }}
             >
               <p className="mb-0">{m.content}</p>
+
+              {m.senderId === currentUser.id && m.isRead && (
+                <small className="text-light d-block mt-1">Seen</small>
+              )}
             </div>
           ))}
         </div>
