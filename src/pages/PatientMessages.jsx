@@ -46,8 +46,11 @@ export default function PatientMessages() {
     // Async wrapper
     const loadMessages = async () => {
       try {
+        const data = await getMessages(conversationId, currentUser.id);
+        setMessages(data);
+        
         await markMessagesAsRead(conversationId, currentUser.id);
-
+        // Re-fetch messages to get updated isRead status
         const updated = await getMessages(conversationId, currentUser.id);
         setMessages(updated);
       } catch (err) {
@@ -61,12 +64,15 @@ export default function PatientMessages() {
 
   // Connect WebSocket ONCE
   useEffect(() => {
-    connectWebSocket(currentUser.id, (msg) => {
+    connectWebSocket(currentUser.id, async (msg) => {
       console.log("Patient WS received:", msg);
 
       if (msg.conversationId === conversationIdRef.current) {
         setMessages((prev) => [...prev, msg]);
-        markMessagesAsRead(msg.conversationId, currentUser.id);
+        await markMessagesAsRead(msg.conversationId, currentUser.id);
+        // Re-fetch to get updated isRead status
+        const updated = await getMessages(msg.conversationId, currentUser.id);
+        setMessages(updated);
       }
     },
       async (convId) => {
@@ -127,7 +133,7 @@ export default function PatientMessages() {
             >
               <p className="mb-0">{m.content}</p>
 
-              {m.senderId === currentUser.id && m.isRead && (
+              {m.senderId === currentUser.id && m.read && (
                 <small className="text-light d-block mt-1">Seen</small>
               )}
             </div>
