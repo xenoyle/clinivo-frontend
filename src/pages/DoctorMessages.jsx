@@ -10,6 +10,9 @@ export default function DoctorMessages() {
   const [inputText, setInputText] = useState("");
   const [error, setError] = useState(null);
 
+  // NEW: unread state
+  const [unread, setUnread] = useState({});
+
   const chatRef = useRef(null);
   const conversationIdRef = useRef(null);
 
@@ -21,7 +24,6 @@ export default function DoctorMessages() {
 
   // Load doctor's conversations
   useEffect(() => {
-    // Async wrapper
     const loadConversations = async () => {
       try {
         const data = await getDoctorConversations(currentUser.id);
@@ -41,26 +43,28 @@ export default function DoctorMessages() {
         setError("Failed to fetch conversations.");
       }
     };
-    
+
     loadConversations();
   }, []);
 
-  // Load messages for selected doctor conversation
+  // Load messages for selected conversation
   useEffect(() => {
     if (!activeConversationId) return;
-    
-        // Async wrapper
-        const loadMessages = async () => {
-          try {
-            const data = await getMessages(activeConversationId);
-            setMessages(data);
-          } catch (err) {
-            console.error("Messages fetch error:", err);
-            setError("Failed to fetch messages.");
-          }
-        };
-    
-        loadMessages();
+
+    const loadMessages = async () => {
+      try {
+        const data = await getMessages(activeConversationId);
+        setMessages(data);
+
+        // Clear unread when opening the conversation
+        setUnread((prev) => ({ ...prev, [activeConversationId]: false }));
+      } catch (err) {
+        console.error("Messages fetch error:", err);
+        setError("Failed to fetch messages.");
+      }
+    };
+
+    loadMessages();
   }, [activeConversationId]);
 
   // Connect WebSocket ONCE
@@ -68,9 +72,16 @@ export default function DoctorMessages() {
     connectWebSocket(currentUser.id, (msg) => {
       console.log("Doctor WS received:", msg);
 
-      if (msg.conversationId === conversationIdRef.current) {
-        setMessages((prev) => [...prev, msg]);
+      const convId = msg.conversationId;
+
+      // If message is for a different conversation → mark unread
+      if (convId !== conversationIdRef.current) {
+        setUnread((prev) => ({ ...prev, [convId]: true }));
+        return;
       }
+
+      // If it's for the active conversation → append normally
+      setMessages((prev) => [...prev, msg]);
     });
   }, []);
 
@@ -89,7 +100,7 @@ export default function DoctorMessages() {
   };
 
   const activeConversation = conversations.find(
-    (c) => c.id === activeConversationId,
+    (c) => c.id === activeConversationId
   );
 
   return (
@@ -103,6 +114,7 @@ export default function DoctorMessages() {
               ⚙️
             </Link>
           </div>
+
           <div className="p-2">
             <input
               type="text"
@@ -116,18 +128,28 @@ export default function DoctorMessages() {
               conversations.map((c) => (
                 <button
                   key={c.id}
-                  className={`list-group-item list-group-item-action ${
-                    activeConversationId === c.id ? "active" : ""
-                  }`}
-                  onClick={() => setActiveConversationId(c.id)}
+                  className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center
+                    ${activeConversationId === c.id ? "active" : ""}
+                    ${unread[c.id] ? "list-group-item-warning" : ""}
+                  `}
+                  onClick={() => {
+                    setActiveConversationId(c.id);
+                    setUnread((prev) => ({ ...prev, [c.id]: false }));
+                  }}
                 >
                   <strong>
                     {c.patient?.firstName} {c.patient?.lastName}
                   </strong>
+
+                  {unread[c.id] && (
+                    <span className="badge bg-danger rounded-pill">New</span>
+                  )}
                 </button>
               ))}
           </div>
         </div>
+
+        {/* Chat Area */}
         <div className="col-md-9 d-flex flex-column">
           <div className="p-3 border-bottom bg-white">
             <h5 className="mb-0">
@@ -160,6 +182,7 @@ export default function DoctorMessages() {
               </div>
             ))}
           </div>
+
           <div className="p-3 border-top bg-white">
             <div className="input-group">
               <input
