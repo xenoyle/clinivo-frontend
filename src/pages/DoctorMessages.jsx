@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
 import { getMessages, getDoctorConversations } from "../api/api";
 import { Link } from "react-router-dom";
+import notifySound from "../assets/notify.wav";
 
 export default function DoctorMessages() {
   const [conversations, setConversations] = useState([]);
@@ -10,7 +11,10 @@ export default function DoctorMessages() {
   const [inputText, setInputText] = useState("");
   const [error, setError] = useState(null);
 
-  // NEW: unread state
+  // Sound notification
+  const notificationAudio = useRef(new Audio(notifySound));
+
+  // Unread state
   const [unread, setUnread] = useState({});
 
   const chatRef = useRef(null);
@@ -74,9 +78,18 @@ export default function DoctorMessages() {
 
       const convId = msg.conversationId;
 
-      // If message is for a different conversation → mark unread
+      // If message is for a different conversation → mark unread + play sound
       if (convId !== conversationIdRef.current) {
         setUnread((prev) => ({ ...prev, [convId]: true }));
+
+        // Play notification sound
+        try {
+          notificationAudio.current.currentTime = 0;
+          notificationAudio.current.play();
+        } catch (err) {
+          console.warn("Audio playback blocked:", err);
+        }
+
         return;
       }
 
