@@ -2,10 +2,11 @@ import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 
 let stompClient = null;
+let isConnected = false;
 
 export function connectWebSocket(userId, onMessage) {
-    if (stompClient && stompClient.connected) {
-        console.log("WebSocket already connected");
+    if (isConnected) {
+        console.log("WebSocket already connected — skipping");
         return;
     }
 
@@ -15,8 +16,8 @@ export function connectWebSocket(userId, onMessage) {
 
     stompClient.connect({}, () => {
         console.log("Web Socket Opened...");
+        isConnected = true;
 
-        // Listen for messages for this user
         stompClient.subscribe(`/topic/messages/${userId}`, (message) => {
             const msg = JSON.parse(message.body);
             console.log("WS message received:", msg);
@@ -31,10 +32,8 @@ export function sendMessageWS(conversationId, senderId, content) {
         return;
     }
 
-    console.log("WS sending:", { conversationId, senderId, content });
-
     stompClient.send(
-        "/app/sendMessage",          // 🔥 match @MessageMapping("/sendMessage")
+        "/app/sendMessage",
         {},
         JSON.stringify({ conversationId, senderId, content })
     );
