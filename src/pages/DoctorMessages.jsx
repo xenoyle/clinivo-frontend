@@ -11,6 +11,9 @@ export default function DoctorMessages() {
   const [inputText, setInputText] = useState("");
   const [error, setError] = useState(null);
 
+  // Search state
+  const [searchTerm, setSearchTerm] = useState("");
+
   // Sound notification
   const notificationAudio = useRef(new Audio(notifySound));
 
@@ -82,7 +85,6 @@ export default function DoctorMessages() {
       if (convId !== conversationIdRef.current) {
         setUnread((prev) => ({ ...prev, [convId]: true }));
 
-        // Play notification sound
         try {
           notificationAudio.current.currentTime = 0;
           notificationAudio.current.play();
@@ -116,6 +118,12 @@ export default function DoctorMessages() {
     (c) => c.id === activeConversationId
   );
 
+  // Filter conversations by patient name
+  const filteredConversations = conversations.filter((c) => {
+    const fullName = `${c.patient?.firstName} ${c.patient?.lastName}`.toLowerCase();
+    return fullName.includes(searchTerm.toLowerCase());
+  });
+
   return (
     <div className="container-fluid mt-3">
       <div className="row" style={{ height: "80vh" }}>
@@ -133,12 +141,14 @@ export default function DoctorMessages() {
               type="text"
               className="form-control mb-2"
               placeholder="Search patients..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           <div className="list-group list-group-flush overflow-auto">
-            {Array.isArray(conversations) &&
-              conversations.map((c) => (
+            {Array.isArray(filteredConversations) &&
+              filteredConversations.map((c) => (
                 <button
                   key={c.id}
                   className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center
