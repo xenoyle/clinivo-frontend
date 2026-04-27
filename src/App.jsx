@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import './App.css';
 
+import ProtectedRoute from "./components/ProtectedRoute";
+
 import Sidebar from "./layout/Sidebar";
 
 // Import Page Components
@@ -39,14 +41,22 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Connected App Routes */}
-          <Route path="/patient-messages" element={<PatientMessages />} />
-          <Route path="/doctor-messages" element={<DoctorMessages />} />
-          <Route path="/settings" element={<Settings />} />
+          {/* Protected Routes for PATIENTS */}
+          <Route element={<ProtectedRoute allowedRoles={["PATIENT"]} />}>
+            <Route path="/patient-messages" element={<PatientMessages />} />
+            {/* Any other patient-only routes go here */}
+          </Route>
 
-          {/* Optional: Catch-all route to redirect unknown URLs back to login 
-            <Route path="*" element={<Navigate to="/login" />} />
-          */}
+          {/* Protected Routes for DOCTORS */}
+          <Route element={<ProtectedRoute allowedRoles={["DOCTOR"]} />}>
+            <Route path="/doctor-messages" element={<DoctorMessages />} />
+            {/* Any other doctor-only routes go here */}
+          </Route>
+
+          {/* Shared Protected Routes (Both can access) */}
+          <Route element={<ProtectedRoute allowedRoles={["PATIENT", "DOCTOR"]} />}>
+            <Route path="/settings" element={<Settings />} />
+          </Route>
         </Routes>
       </main>
     </div>
