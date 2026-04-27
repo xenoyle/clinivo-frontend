@@ -14,7 +14,8 @@ export function connectWebSocket(userId, onMessage) {
     }
 
     console.log("Opening Web Socket for user:", userId);
-    const socket = new SockJS("http://localhost:8080/ws");
+    const wsUrl = import.meta.env.VITE_WS_URL || "http://localhost:8080/ws";
+    const socket = new SockJS(wsUrl);
     const client = Stomp.over(socket);
 
     client.connect({}, () => {
