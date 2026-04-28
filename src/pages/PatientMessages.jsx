@@ -121,7 +121,7 @@ export default function PatientMessages() {
             flexDirection: "column",
           }}
         >
-          {messages.map((m) => (
+          {messages.map((m, index) => (
             <div
               key={m.id}
               className={
@@ -133,7 +133,7 @@ export default function PatientMessages() {
             >
               <p className="mb-0">{m.content}</p>
 
-              {m.senderId === currentUser.id && m.read && (
+              {m.senderId === currentUser.id && m.read && index === messages.length - 1 && (
                 <small className="text-light d-block mt-1">Seen</small>
               )}
             </div>
