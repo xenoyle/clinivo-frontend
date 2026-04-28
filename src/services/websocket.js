@@ -17,7 +17,7 @@ export function connectWebSocket(userId, onMessage) {
     const socket = new SockJS("http://localhost:8080/ws");
     const client = Stomp.over(socket);
 
-    client.connect({}, () => {
+    client.connect({user: userId}, () => {
         console.log("Web Socket Opened for user:", userId);
 
         // Save connection for this user
