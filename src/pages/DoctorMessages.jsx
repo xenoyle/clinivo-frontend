@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
 import { getMessages, getDoctorConversations } from "../api/api";
 import { Link } from "react-router-dom";
+import { markMessagesAsRead } from "../api/api";
 import notifySound from "../assets/notify.wav";
 
 export default function DoctorMessages() {
@@ -58,13 +59,15 @@ export default function DoctorMessages() {
   useEffect(() => {
     if (!activeConversationId) return;
 
+    // Async wrapper
     const loadMessages = async () => {
       try {
-        const data = await getMessages(activeConversationId);
+        const data = await getMessages(activeConversationId, currentUser.id);
         setMessages(data);
-
-        // Clear unread when opening the conversation
-        setUnread((prev) => ({ ...prev, [activeConversationId]: false }));
+        await markMessagesAsRead(activeConversationId, currentUser.id);
+        // Re-fetch messages to get updated isRead status
+        const updatedData = await getMessages(activeConversationId, currentUser.id);
+        setMessages(updatedData);
       } catch (err) {
         console.error("Messages fetch error:", err);
         setError("Failed to fetch messages.");
@@ -76,13 +79,17 @@ export default function DoctorMessages() {
 
   // Connect WebSocket ONCE
   useEffect(() => {
-    connectWebSocket(currentUser.id, (msg) => {
+    connectWebSocket(currentUser.id, async (msg) => {
       console.log("Doctor WS received:", msg);
 
-      const convId = msg.conversationId;
+      if (msg.conversationId === conversationIdRef.current) {
+        setMessages((prev) => [...prev, msg]);
 
-      // If message is for a different conversation → mark unread + play sound
-      if (convId !== conversationIdRef.current) {
+        await markMessagesAsRead(msg.conversationId, currentUser.id);
+        // Re-fetch to get updated isRead status
+        const updated = await getMessages(msg.conversationId, currentUser.id);
+        setMessages(updated);
+      } else {
         setUnread((prev) => ({ ...prev, [convId]: true }));
 
         try {
@@ -94,10 +101,13 @@ export default function DoctorMessages() {
 
         return;
       }
-
-      // If it's for the active conversation → append normally
-      setMessages((prev) => [...prev, msg]);
-    });
+    },
+      async (convId) => {
+        if (convId === conversationIdRef.current) {
+          const updated = await getMessages(convId, currentUser.id);
+          setMessages(updated);
+        }
+      });
   }, []);
 
   // Auto-scroll
@@ -151,14 +161,12 @@ export default function DoctorMessages() {
               filteredConversations.map((c) => (
                 <button
                   key={c.id}
-                  className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center
-                    ${activeConversationId === c.id ? "active" : ""}
-                    ${unread[c.id] ? "list-group-item-warning" : ""}
-                  `}
-                  onClick={() => {
-                    setActiveConversationId(c.id);
+                  className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center 
+                    ${activeConversationId === c.id ? "active" : ""}`}
+                  onClick={() =>  {
+                    setActiveConversationId(c.id)};
                     setUnread((prev) => ({ ...prev, [c.id]: false }));
-                  }}
+                  }
                 >
                   <strong>
                     {c.patient?.firstName} {c.patient?.lastName}
@@ -191,7 +199,7 @@ export default function DoctorMessages() {
               flexDirection: "column",
             }}
           >
-            {messages.map((m) => (
+            {messages.map((m, index) => (
               <div
                 key={m.id}
                 className={
@@ -202,6 +210,9 @@ export default function DoctorMessages() {
                 style={{ maxWidth: "60%" }}
               >
                 <p className="mb-0">{m.content}</p>
+                {m.senderId === currentUser.id && m.read && index === messages.length - 1 && (
+                  <small className="text-light d-block mt-1">Seen</small>
+                )}
               </div>
             ))}
           </div>

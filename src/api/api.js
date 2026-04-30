@@ -28,12 +28,20 @@ export const getDoctorConversations = async (doctorId) => {
 };
 
 // MESSAGES
-export const getMessages = async (conversationId) => {
-  const res = await api.get(`/messages/conversation/${conversationId}`);
+export const getMessages = async (conversationId, userId) => {
+  const res = await api.get(`/messages/conversation/${conversationId}`, {
+    params: { userId },
+  });
   return res.data;
 };
 
 export const sendMessage = async (data) => {
   const res = await api.post("/messages", data);
   return res.data;
+};
+
+export const markMessagesAsRead = async (conversationId, userId) => {
+  await api.post("/messages/read", null, {
+    params: { conversationId, userId },
+  });
 };
