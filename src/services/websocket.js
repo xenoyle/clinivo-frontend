@@ -1,8 +1,10 @@
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 
-let stompClient = null;
-let isConnected = false;
+// Store connections per user
+if (!window.__wsConnections) {
+    window.__wsConnections = {};
+}
 
 export function connectWebSocket(userId, onMessage, onRead) {
     if (isConnected) {
@@ -10,17 +12,20 @@ export function connectWebSocket(userId, onMessage, onRead) {
         return;
     }
 
-    console.log("Opening Web Socket...");
-    const socket = new SockJS("http://localhost:8080/ws");
-    stompClient = Stomp.over(socket);
+    console.log("Opening Web Socket for user:", userId);
+    const wsUrl = import.meta.env.VITE_WS_URL || "http://localhost:8080/ws";
+    const socket = new SockJS(wsUrl);
+    const client = Stomp.over(socket);
 
-    stompClient.connect({}, () => {
-        console.log("Web Socket Opened...");
-        isConnected = true;
+    client.connect({}, () => {
+        console.log("Web Socket Opened for user:", userId);
 
-        stompClient.subscribe(`/topic/messages/${userId}`, (message) => {
+        // Save connection for this user
+        window.__wsConnections[userId] = client;
+
+        client.subscribe(`/topic/messages/${userId}`, (message) => {
             const msg = JSON.parse(message.body);
-            console.log("WS message received:", msg);
+            console.log("WS message received for user", userId, msg);
             onMessage(msg);
         });
         stompClient.subscribe(`/topic/read/${userId}`, (message) => {
@@ -36,12 +41,14 @@ export function connectWebSocket(userId, onMessage, onRead) {
 }
 
 export function sendMessageWS(conversationId, senderId, content) {
-    if (!stompClient || !stompClient.connected) {
-        console.error("WebSocket not connected, cannot send");
+    const client = window.__wsConnections[senderId];
+
+    if (!client || !client.connected) {
+        console.error("WebSocket not connected for user", senderId);
         return;
     }
 
-    stompClient.send(
+    client.send(
         "/app/sendMessage",
         {},
         JSON.stringify({ conversationId, senderId, content })

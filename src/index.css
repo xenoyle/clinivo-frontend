@@ -1,5 +1,5 @@
 :root {
-  --text: #4b4453;
+  --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
   --border: #e5e4e7;
@@ -55,6 +55,7 @@ body {
 }
 
 #root {
+  width: 1126px;
   max-width: 100%;
   margin: 0 auto;
   text-align: center;
@@ -107,21 +108,4 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
-}
-
-.app-container {
-  display: flex;
-  width: 100%;
-}
-
-.main-content {
-  flex-grow: 1;
-  overflow-x: hidden; 
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  overflow: hidden;
 }

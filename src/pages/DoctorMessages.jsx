@@ -3,6 +3,7 @@ import { connectWebSocket, sendMessageWS } from "../services/websocket";
 import { getMessages, getDoctorConversations } from "../api/api";
 import { Link } from "react-router-dom";
 import { markMessagesAsRead } from "../api/api";
+import notifySound from "../assets/notify.wav";
 
 export default function DoctorMessages() {
   const [conversations, setConversations] = useState([]);
@@ -10,6 +11,15 @@ export default function DoctorMessages() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [error, setError] = useState(null);
+
+  // Search state
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Sound notification
+  const notificationAudio = useRef(new Audio(notifySound));
+
+  // Unread state
+  const [unread, setUnread] = useState({});
 
   const chatRef = useRef(null);
   const conversationIdRef = useRef(null);
@@ -22,7 +32,6 @@ export default function DoctorMessages() {
 
   // Load doctor's conversations
   useEffect(() => {
-    // Async wrapper
     const loadConversations = async () => {
       try {
         const data = await getDoctorConversations(currentUser.id);
@@ -46,7 +55,7 @@ export default function DoctorMessages() {
     loadConversations();
   }, []);
 
-  // Load messages for selected doctor conversation
+  // Load messages for selected conversation
   useEffect(() => {
     if (!activeConversationId) return;
 
@@ -80,6 +89,17 @@ export default function DoctorMessages() {
         // Re-fetch to get updated isRead status
         const updated = await getMessages(msg.conversationId, currentUser.id);
         setMessages(updated);
+      } else {
+        setUnread((prev) => ({ ...prev, [convId]: true }));
+
+        try {
+          notificationAudio.current.currentTime = 0;
+          notificationAudio.current.play();
+        } catch (err) {
+          console.warn("Audio playback blocked:", err);
+        }
+
+        return;
       }
     },
       async (convId) => {
@@ -105,8 +125,14 @@ export default function DoctorMessages() {
   };
 
   const activeConversation = conversations.find(
-    (c) => c.id === activeConversationId,
+    (c) => c.id === activeConversationId
   );
+
+  // Filter conversations by patient name
+  const filteredConversations = conversations.filter((c) => {
+    const fullName = `${c.patient?.firstName} ${c.patient?.lastName}`.toLowerCase();
+    return fullName.includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="container-fluid mt-3">
@@ -119,30 +145,42 @@ export default function DoctorMessages() {
               ⚙️
             </Link>
           </div>
+
           <div className="p-2">
             <input
               type="text"
               className="form-control mb-2"
               placeholder="Search patients..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           <div className="list-group list-group-flush overflow-auto">
-            {Array.isArray(conversations) &&
-              conversations.map((c) => (
+            {Array.isArray(filteredConversations) &&
+              filteredConversations.map((c) => (
                 <button
                   key={c.id}
-                  className={`list-group-item list-group-item-action ${activeConversationId === c.id ? "active" : ""
-                    }`}
-                  onClick={() => setActiveConversationId(c.id)}
+                  className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center 
+                    ${activeConversationId === c.id ? "active" : ""}`}
+                  onClick={() =>  {
+                    setActiveConversationId(c.id)};
+                    setUnread((prev) => ({ ...prev, [c.id]: false }));
+                  }
                 >
                   <strong>
                     {c.patient?.firstName} {c.patient?.lastName}
                   </strong>
+
+                  {unread[c.id] && (
+                    <span className="badge bg-danger rounded-pill">New</span>
+                  )}
                 </button>
               ))}
           </div>
         </div>
+
+        {/* Chat Area */}
         <div className="col-md-9 d-flex flex-column">
           <div className="p-3 border-bottom bg-white">
             <h5 className="mb-0">
@@ -178,6 +216,7 @@ export default function DoctorMessages() {
               </div>
             ))}
           </div>
+
           <div className="p-3 border-top bg-white">
             <div className="input-group">
               <input
