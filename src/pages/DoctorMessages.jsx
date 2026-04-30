@@ -163,10 +163,10 @@ export default function DoctorMessages() {
                   key={c.id}
                   className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center 
                     ${activeConversationId === c.id ? "active" : ""}`}
-                  onClick={() =>  {
-                    setActiveConversationId(c.id)};
+                  onClick={() => {
+                    setActiveConversationId(c.id);
                     setUnread((prev) => ({ ...prev, [c.id]: false }));
-                  }
+                  }}
                 >
                   <strong>
                     {c.patient?.firstName} {c.patient?.lastName}
