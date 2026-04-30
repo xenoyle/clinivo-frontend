@@ -15,6 +15,7 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError(null);
 
     try {
       await createUser({
@@ -28,7 +29,20 @@ export default function Register() {
       navigate("/login");
     } catch (err) {
       console.error("Registration error:", err);
-      setError("Failed to register. Please try again.");
+      
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      }
+
+      else if (err.response?.status === 409) {
+        setError("This email is already registered. Please try logging in.");
+      }
+      else if (err.response?.status === 400) {
+        setError("Invalid data. Please check your phone number or password strength.");
+      }
+      else {
+        setError("Something went wrong on our end. Please try again later.");
+      }
     }
   };
 
