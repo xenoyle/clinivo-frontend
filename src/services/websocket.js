@@ -7,9 +7,11 @@ if (!window.__wsConnections) {
 }
 
 export function connectWebSocket(userId, onMessage, onRead) {
-    if (isConnected) {
-        console.log("WebSocket already connected — skipping");
-        return;
+    if (window.__wsConnections[userId]) {
+        if (window.__wsConnections[userId].connected) {
+            console.log("WebSocket already connected — skipping");
+            return;
+        }
     }
 
     console.log("Opening Web Socket for user:", userId);
@@ -28,7 +30,7 @@ export function connectWebSocket(userId, onMessage, onRead) {
             console.log("WS message received for user", userId, msg);
             onMessage(msg);
         });
-        stompClient.subscribe(`/topic/read/${userId}`, (message) => {
+        client.subscribe(`/topic/read/${userId}`, (message) => {
             const conversationId = JSON.parse(message.body);
             console.log("Read receipt received:", conversationId);
 
