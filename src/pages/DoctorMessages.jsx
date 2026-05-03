@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
-import { getMessages, getDoctorConversations } from "../api/api";
+import { getMessages, getAllUsersByRole, getPatientConversation, getDoctorConversations, createConversation } from "../api/api";
 import { Link } from "react-router-dom";
 import { markMessagesAsRead } from "../api/api";
 import notifySound from "../assets/notify.wav";
 
 export default function DoctorMessages() {
-  const [conversations, setConversations] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [conversationMap, setConversationMap] = useState({}); // Map patientId to conversationId
+  const [activePatientId, setActivePatientId] = useState(null);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
@@ -30,42 +32,75 @@ export default function DoctorMessages() {
     conversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
 
-  // Load doctor's conversations
+  // Load patients and conversations
   useEffect(() => {
-    const loadConversations = async () => {
+    const loadData = async () => {
       try {
-        const data = await getDoctorConversations(currentUser.id);
+        const patientData = await getAllUsersByRole("PATIENT");
+        const convData = await getDoctorConversations(currentUser.id);
 
-        if (Array.isArray(data)) {
-          setConversations(data);
-
-          if (data.length > 0) {
-            setActiveConversationId(data[0].id);
+        if (Array.isArray(patientData)) {
+          setPatients(patientData);
+          if (patientData.length > 0) {
+            setActivePatientId(patientData[0].id);
           }
         } else {
-          console.error("Expected array but got:", data);
-          setConversations([]);
+          console.error("Expected array but got:", patientData);
+          setPatients([]);
         }
+
+        // Build map of patientId -> conversationId
+        const map = {};
+        if (Array.isArray(convData)) {
+          convData.forEach(conv => {
+            map[conv.patientId] = conv.id;
+          });
+        }
+        setConversationMap(map);
       } catch (err) {
-        console.error("Conversation fetch error:", err);
-        setError("Failed to fetch conversations.");
+        console.error("Data fetch error:", err);
+        setError("Failed to fetch data.");
       }
     };
 
-    loadConversations();
+    loadData();
   }, []);
+
+  // Handle patient selection and conversation creation
+  useEffect(() => {
+    if (!activePatientId) return;
+
+    const handlePatientClick = async () => {
+      try {
+        // Check if conversation exists
+        if (conversationMap[activePatientId]) {
+          setActiveConversationId(conversationMap[activePatientId]);
+        } else {
+          // Create new conversation
+          const newConv = await createConversation({
+            userIds: [currentUser.id, activePatientId]
+          });
+          setActiveConversationId(newConv.id);
+          setConversationMap(prev => ({ ...prev, [activePatientId]: newConv.id }));
+        }
+      } catch (err) {
+        console.error("Error handling patient click:", err);
+        setError("Failed to create or load conversation.");
+      }
+    };
+
+    handlePatientClick();
+  }, [activePatientId]);
 
   // Load messages for selected conversation
   useEffect(() => {
     if (!activeConversationId) return;
 
-    // Async wrapper
     const loadMessages = async () => {
       try {
         const data = await getMessages(activeConversationId, currentUser.id);
         setMessages(data);
         await markMessagesAsRead(activeConversationId, currentUser.id);
-        // Re-fetch messages to get updated isRead status
         const updatedData = await getMessages(activeConversationId, currentUser.id);
         setMessages(updatedData);
       } catch (err) {
@@ -124,13 +159,13 @@ export default function DoctorMessages() {
     setInputText("");
   };
 
-  const activeConversation = conversations.find(
-    (c) => c.id === activeConversationId
-  );
 
-  // Filter conversations by patient name
-  const filteredConversations = conversations.filter((c) => {
-    const fullName = `${c.patient?.firstName} ${c.patient?.lastName}`.toLowerCase();
+
+  const activePatient = patients.find((p) => p.id === activePatientId);
+
+  // Filter patients by name
+  const filteredPatients = patients.filter((p) => {
+    const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
     return fullName.includes(searchTerm.toLowerCase());
   });
 
@@ -157,22 +192,22 @@ export default function DoctorMessages() {
           </div>
 
           <div className="list-group list-group-flush overflow-auto">
-            {Array.isArray(filteredConversations) &&
-              filteredConversations.map((c) => (
+            {Array.isArray(filteredPatients) &&
+              filteredPatients.map((p) => (
                 <button
-                  key={c.id}
+                  key={p.id}
                   className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center 
-                    ${activeConversationId === c.id ? "active" : ""}`}
+                    ${activePatientId === p.id ? "active" : ""}`}
                   onClick={() => {
-                    setActiveConversationId(c.id);
-                    setUnread((prev) => ({ ...prev, [c.id]: false }));
+                    setActivePatientId(p.id);
+                    setUnread((prev) => ({ ...prev, [p.id]: false }));
                   }}
                 >
                   <strong>
-                    {c.patient?.firstName} {c.patient?.lastName}
+                    {p.firstName} {p.lastName}
                   </strong>
 
-                  {unread[c.id] && (
+                  {unread[p.id] && (
                     <span className="badge bg-danger rounded-pill">New</span>
                   )}
                 </button>
@@ -184,8 +219,7 @@ export default function DoctorMessages() {
         <div className="col-md-9 d-flex flex-column">
           <div className="p-3 border-bottom bg-white">
             <h5 className="mb-0">
-              {activeConversation?.patient?.firstName}{" "}
-              {activeConversation?.patient?.lastName}
+              {activePatient?.firstName} {activePatient?.lastName}
             </h5>
           </div>
 
