@@ -16,6 +16,11 @@ export const getAllUsers = async () => {
   return res.data;
 }
 
+export const getAllUsersByRole = async (role) => {
+  const res = await api.get("/users", { params: { role } });
+  return res.data;
+}
+
 // CONVERSATIONS
 export const createConversation = async (userIds) => {
   const res = await api.post("/conversations", userIds);
