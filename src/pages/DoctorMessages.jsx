@@ -77,9 +77,7 @@ export default function DoctorMessages() {
           setActiveConversationId(conversationMap[activePatientId]);
         } else {
           // Create new conversation
-          const newConv = await createConversation({
-            userIds: [currentUser.id, activePatientId]
-          });
+          const newConv = await createConversation(currentUser.id, activePatientId);
           setActiveConversationId(newConv.id);
           setConversationMap(prev => ({ ...prev, [activePatientId]: newConv.id }));
         }
