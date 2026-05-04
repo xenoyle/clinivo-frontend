@@ -17,7 +17,7 @@ export const getAllUsers = async () => {
 }
 
 export const getAllPatients = async () => {
-  const res = await api.get("/patients");
+  const res = await api.get("/users/patients");
   return res.data;
 }
 
