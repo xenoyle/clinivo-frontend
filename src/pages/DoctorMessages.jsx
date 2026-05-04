@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
 import {
   getMessages,
-  getAllUsersByRole,
+  getAllPatients,
   getPatientConversation,
   getDoctorConversations,
   createConversation,
@@ -37,7 +37,7 @@ export default function DoctorMessages() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const patientData = await getAllUsersByRole("PATIENT");
+        const patientData = await getAllPatients();
         const convData = await getDoctorConversations(currentUser.id);
 
         setPatients(Array.isArray(patientData) ? patientData : []);
@@ -71,10 +71,8 @@ export default function DoctorMessages() {
         if (conversationMap[activePatientId]) {
           setActiveConversationId(conversationMap[activePatientId]);
         } else {
-          const newConv = await createConversation({
-            userIds: [currentUser.id, activePatientId],
-          });
-
+          // Create new conversation
+          const newConv = await createConversation(currentUser.id, activePatientId);
           setActiveConversationId(newConv.id);
           setConversationMap((prev) => ({
             ...prev,

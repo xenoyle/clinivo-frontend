@@ -16,14 +16,14 @@ export const getAllUsers = async () => {
   return res.data;
 }
 
-export const getAllUsersByRole = async (role) => {
-  const res = await api.get("/users", { params: { role } });
+export const getAllPatients = async () => {
+  const res = await api.get("/users/patients");
   return res.data;
 }
-
+  
 // CONVERSATIONS
-export const createConversation = async (userIds) => {
-  const res = await api.post("/conversations", userIds);
+export const createConversation = async (doctorId, patientId) => {
+  const res = await api.post(`/conversations/${doctorId}/${patientId}`, {});
   return res.data;
 };
 
