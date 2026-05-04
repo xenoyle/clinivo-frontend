@@ -16,8 +16,8 @@ export const getAllUsers = async () => {
   return res.data;
 }
 
-export const getAllUsersByRole = async (role) => {
-  const res = await api.get("/users", { params: { role } });
+export const getAllPatients = async (role) => {
+  const res = await api.get("/patients");
   return res.data;
 }
 

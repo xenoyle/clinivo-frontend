@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
-import { getMessages, getAllUsersByRole, getPatientConversation, getDoctorConversations, createConversation } from "../api/api";
+import { getMessages, getAllPatients, getPatientConversation, getDoctorConversations, createConversation } from "../api/api";
 import { Link } from "react-router-dom";
 import { markMessagesAsRead } from "../api/api";
 import notifySound from "../assets/notify.wav";
@@ -36,7 +36,7 @@ export default function DoctorMessages() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const patientData = await getAllUsersByRole("PATIENT");
+        const patientData = await getAllPatients();
         const convData = await getDoctorConversations(currentUser.id);
 
         if (Array.isArray(patientData)) {
