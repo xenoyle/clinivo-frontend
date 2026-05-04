@@ -16,7 +16,7 @@ export const getAllUsers = async () => {
   return res.data;
 }
 
-export const getAllPatients = async (role) => {
+export const getAllPatients = async () => {
   const res = await api.get("/patients");
   return res.data;
 }
