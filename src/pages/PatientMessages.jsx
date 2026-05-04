@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
-import { getMessages, getPatientConversation } from "../api/api";
+import { getMessages, getPatientConversation, markMessagesAsRead } from "../api/api";
 import { Link } from "react-router-dom";
-import { markMessagesAsRead } from "../api/api";
 
 export default function PatientMessages() {
   const [messages, setMessages] = useState([]);
@@ -15,42 +14,32 @@ export default function PatientMessages() {
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  // Keep ref updated
   useEffect(() => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
 
-  // Load patient's conversation
   useEffect(() => {
-    // Async wrapper
     const loadConversation = async () => {
       try {
         const data = await getPatientConversation(currentUser.id);
-
-        if (data && data.id) {
-          setConversationId(data.id);
-        }
+        if (data && data.id) setConversationId(data.id);
       } catch (err) {
         console.error("Conversation fetch error:", err);
         setError("Failed to fetch conversation.");
       }
     };
-
     loadConversation();
   }, []);
 
-  // Load messages when conversationId is ready
   useEffect(() => {
     if (!conversationId) return;
 
-    // Async wrapper
     const loadMessages = async () => {
       try {
         const data = await getMessages(conversationId, currentUser.id);
         setMessages(data);
-        
+
         await markMessagesAsRead(conversationId, currentUser.id);
-        // Re-fetch messages to get updated isRead status
         const updated = await getMessages(conversationId, currentUser.id);
         setMessages(updated);
       } catch (err) {
@@ -62,19 +51,17 @@ export default function PatientMessages() {
     loadMessages();
   }, [conversationId]);
 
-  // Connect WebSocket ONCE
   useEffect(() => {
-    connectWebSocket(currentUser.id, async (msg) => {
-      console.log("Patient WS received:", msg);
-
-      if (msg.conversationId === conversationIdRef.current) {
-        setMessages((prev) => [...prev, msg]);
-        await markMessagesAsRead(msg.conversationId, currentUser.id);
-        // Re-fetch to get updated isRead status
-        const updated = await getMessages(msg.conversationId, currentUser.id);
-        setMessages(updated);
-      }
-    },
+    connectWebSocket(
+      currentUser.id,
+      async (msg) => {
+        if (msg.conversationId === conversationIdRef.current) {
+          setMessages((prev) => [...prev, msg]);
+          await markMessagesAsRead(msg.conversationId, currentUser.id);
+          const updated = await getMessages(msg.conversationId, currentUser.id);
+          setMessages(updated);
+        }
+      },
       async (convId) => {
         if (convId === conversationIdRef.current) {
           const updated = await getMessages(convId, currentUser.id);
@@ -82,31 +69,34 @@ export default function PatientMessages() {
         }
       }
     );
-  }, []); // IMPORTANT
+  }, []);
 
-  // Auto-scroll
   useEffect(() => {
     chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
   }, [messages]);
 
   const handleSend = () => {
     if (!inputText.trim()) return;
-
-    console.log("Patient sending to conversation:", conversationId);
-
     sendMessageWS(conversationId, currentUser.id, inputText);
     setInputText("");
   };
 
-  if (!currentUser) {
-    return <div>Please log in.</div>;
-  }
+  // ⭐ NEW: Enter-to-send
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  if (!currentUser) return <div>Please log in.</div>;
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-3 mb-5">
+
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="card shadow-sm mx-auto" style={{ maxWidth: "600px" }}>
+      <div className="card shadow-sm mx-auto w-100" style={{ maxWidth: "600px" }}>
         <div className="card-header bg-primary text-white">
           Chat with Your Doctor
         </div>
@@ -115,7 +105,7 @@ export default function PatientMessages() {
           ref={chatRef}
           className="card-body bg-light"
           style={{
-            height: "400px",
+            height: "60vh",
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
@@ -133,9 +123,11 @@ export default function PatientMessages() {
             >
               <p className="mb-0">{m.content}</p>
 
-              {m.senderId === currentUser.id && m.read && index === messages.length - 1 && (
-                <small className="text-light d-block mt-1">Seen</small>
-              )}
+              {m.senderId === currentUser.id &&
+                m.read &&
+                index === messages.length - 1 && (
+                  <small className="text-light d-block mt-1">Seen</small>
+                )}
             </div>
           ))}
         </div>
@@ -148,6 +140,7 @@ export default function PatientMessages() {
               placeholder="Type a message..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyPress}   // ⭐ Enter-to-send
             />
             <button className="btn btn-primary" onClick={handleSend}>
               Send
@@ -155,6 +148,7 @@ export default function PatientMessages() {
           </div>
         </div>
       </div>
+
       <div className="text-center mt-3">
         <Link to="/doctor-messages" className="text-muted small">
           Switch to Doctor View (Demo Only)
