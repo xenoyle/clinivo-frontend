@@ -173,11 +173,7 @@ export default function PatientMessages() {
         </div>
       </div>
 
-      <div className="text-center mt-3">
-        <Link to="/doctor-messages" className="text-muted small">
-          Switch to Doctor View (Demo Only)
-        </Link>
-      </div>
+
     </div>
   );
 }
