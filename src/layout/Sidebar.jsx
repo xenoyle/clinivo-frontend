@@ -99,7 +99,7 @@ function Sidebar({ isOpen, toggleSidebar }) {
             </nav>
 
             {/* MOBILE BOTTOM NAV */}
-            <nav className="d-md-none bg-dark text-white fixed-bottom shadow-lg">
+            <nav className="d-md-none bg-dark text-white fixed-bottom sticky shadow-lg">
                 <ul className="nav justify-content-around py-2">
 
                     {/* Messages */}
