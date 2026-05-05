@@ -4,6 +4,25 @@ import { useNavigate } from 'react-router-dom';
 export default function Settings() {
   const navigate = useNavigate();
 
+  const handleLogoutAll = () => {
+    // Close all WebSocket connections
+    if (window.__wsConnections) {
+      Object.values(window.__wsConnections).forEach((client) => {
+        try { client.disconnect(); } catch { }
+      });
+      window.__wsConnections = {};
+    }
+
+    // Clear all user data
+    localStorage.removeItem("user");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+
+    // Redirect to login
+    window.location.href = "/login";
+  };
+
   return (
     <div className="container d-flex justify-content-center mt-4 mb-5">
       <div className="row w-100 justify-content-center">
@@ -59,7 +78,7 @@ export default function Settings() {
               </p>
 
               <button
-                onClick={() => navigate('/login')}
+                onClick={handleLogoutAll}
                 className="btn btn-outline-danger btn-sm"
               >
                 Log Out of All Devices

@@ -27,6 +27,14 @@ export default function Register() {
         role: role.toUpperCase(),
       });
 
+      // Clean up any leftover WebSocket connections (safety)
+      if (window.__wsConnections) {
+        Object.values(window.__wsConnections).forEach((client) => {
+          try { client.disconnect(); } catch { }
+        });
+        window.__wsConnections = {};
+      }
+
       navigate("/login");
     } catch (err) {
       console.error("Registration error:", err);
