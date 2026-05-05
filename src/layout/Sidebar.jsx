@@ -20,6 +20,26 @@ function Sidebar({ isOpen, toggleSidebar }) {
     const isActive = (path) =>
         location.pathname === path ? "bg-primary text-white" : "text-white";
 
+    // ⭐ REAL LOGOUT FUNCTION
+    const handleLogout = () => {
+        // Close all WebSocket connections
+        if (window.__wsConnections) {
+            Object.values(window.__wsConnections).forEach((client) => {
+                try { client.disconnect(); } catch { }
+            });
+            window.__wsConnections = {};
+        }
+
+        // Clear all user data
+        localStorage.removeItem("user");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+
+        // Redirect
+        window.location.href = "/login";
+    };
+
     return (
         <>
             {/* DESKTOP SIDEBAR */}
@@ -69,10 +89,13 @@ function Sidebar({ isOpen, toggleSidebar }) {
 
                 <hr />
 
-                {/* Logout */}
-                <Link className="nav-link text-white p-1" to="/login">
+                {/* LOGOUT BUTTON (DESKTOP) */}
+                <button
+                    className="nav-link text-white p-1 bg-transparent border-0 text-start"
+                    onClick={handleLogout}
+                >
                     {isOpen ? "Logout" : <i className="bi bi-box-arrow-right fs-4"></i>}
-                </Link>
+                </button>
             </nav>
 
             {/* MOBILE BOTTOM NAV */}
@@ -93,11 +116,14 @@ function Sidebar({ isOpen, toggleSidebar }) {
                         </Link>
                     </li>
 
-                    {/* Logout */}
+                    {/* LOGOUT BUTTON (MOBILE) */}
                     <li className="nav-item">
-                        <Link className="nav-link text-white" to="/login">
+                        <button
+                            className="nav-link text-white bg-transparent border-0"
+                            onClick={handleLogout}
+                        >
                             <i className="bi bi-box-arrow-right fs-4"></i>
-                        </Link>
+                        </button>
                     </li>
                 </ul>
             </nav>

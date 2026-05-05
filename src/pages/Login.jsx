@@ -14,11 +14,23 @@ export default function Login() {
 
     try {
       const data = await loginUser(email, password);
+
       if (!data) {
         setError("Invalid email or password.");
         return;
       }
+
+      // Clear any leftover WebSocket connections from previous sessions
+      if (window.__wsConnections) {
+        Object.values(window.__wsConnections).forEach((client) => {
+          try { client.disconnect(); } catch { }
+        });
+        window.__wsConnections = {};
+      }
+
+      // Save user
       localStorage.setItem("user", JSON.stringify(data));
+
     } catch (err) {
       console.error("Login error:", err);
       setError("Invalid email or password.");
@@ -26,6 +38,7 @@ export default function Login() {
     }
 
     const user = JSON.parse(localStorage.getItem("user"));
+
     if (user.role === "PATIENT") {
       navigate("/patient-messages");
     } else if (user.role === "DOCTOR") {

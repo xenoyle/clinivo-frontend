@@ -35,6 +35,11 @@ export default function DoctorMessages() {
 
   // Load patients + conversations
   useEffect(() => {
+    if (!currentUser || !currentUser.id) {
+      console.log("No user — skipping doctor data load");
+      return;
+    }
+
     const loadData = async () => {
       try {
         const patientData = await getAllPatients();
@@ -42,7 +47,7 @@ export default function DoctorMessages() {
 
         setPatients(Array.isArray(patientData) ? patientData : []);
 
-        if (patientData.length > 0) {
+        if (Array.isArray(patientData) && patientData.length > 0) {
           setActivePatientId(patientData[0].id);
         }
 
@@ -60,10 +65,11 @@ export default function DoctorMessages() {
     };
 
     loadData();
-  }, []);
+  }, [currentUser?.id]);
 
   // Handle patient selection
   useEffect(() => {
+    if (!currentUser || !currentUser.id) return;
     if (!activePatientId) return;
 
     const handlePatientClick = async () => {
@@ -71,7 +77,6 @@ export default function DoctorMessages() {
         if (conversationMap[activePatientId]) {
           setActiveConversationId(conversationMap[activePatientId]);
         } else {
-          // Create new conversation
           const newConv = await createConversation(currentUser.id, activePatientId);
           setActiveConversationId(newConv.id);
           setConversationMap((prev) => ({
@@ -86,10 +91,11 @@ export default function DoctorMessages() {
     };
 
     handlePatientClick();
-  }, [activePatientId]);
+  }, [activePatientId, currentUser?.id, conversationMap]);
 
   // Load messages
   useEffect(() => {
+    if (!currentUser || !currentUser.id) return;
     if (!activeConversationId) return;
 
     const loadMessages = async () => {
@@ -107,10 +113,15 @@ export default function DoctorMessages() {
     };
 
     loadMessages();
-  }, [activeConversationId]);
+  }, [activeConversationId, currentUser?.id]);
 
   // WebSocket
   useEffect(() => {
+    if (!currentUser || !currentUser.id) {
+      console.log("No user — skipping WebSocket connection (doctor)");
+      return;
+    }
+
     connectWebSocket(
       currentUser.id,
       async (msg) => {
@@ -121,7 +132,6 @@ export default function DoctorMessages() {
           const updated = await getMessages(msg.conversationId, currentUser.id);
           setMessages(updated);
         } else {
-          // FIXED: convId was undefined
           setUnread((prev) => ({ ...prev, [msg.conversationId]: true }));
 
           try {
@@ -137,7 +147,7 @@ export default function DoctorMessages() {
         }
       }
     );
-  }, []);
+  }, [currentUser?.id]);
 
   // Auto-scroll
   useEffect(() => {
@@ -146,11 +156,11 @@ export default function DoctorMessages() {
 
   const handleSend = () => {
     if (!inputText.trim()) return;
+    if (!activeConversationId || !currentUser || !currentUser.id) return;
     sendMessageWS(activeConversationId, currentUser.id, inputText);
     setInputText("");
   };
 
-  // ⭐ ENTER-TO-SEND
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -165,11 +175,17 @@ export default function DoctorMessages() {
     return fullName.includes(searchTerm.toLowerCase());
   });
 
+  if (!currentUser) {
+    return (
+      <div className="container mt-3">
+        <div className="alert alert-warning">Please log in to view messages.</div>
+      </div>
+    );
+  }
+
   return (
     <div className="container-fluid mt-3">
-
       <div className="row" style={{ height: "80vh" }}>
-
         {/* Patient Sidebar */}
         <div className="col-12 col-md-3 border-end d-flex flex-column mb-3 mb-md-0">
           <div className="p-2 d-flex justify-content-between align-items-center">
@@ -257,7 +273,7 @@ export default function DoctorMessages() {
                 placeholder="Type a message..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleKeyPress}   // ⭐ ENTER-TO-SEND
+                onKeyDown={handleKeyPress}
               />
               <button className="btn btn-dark" onClick={handleSend}>
                 Send Message
@@ -267,7 +283,6 @@ export default function DoctorMessages() {
             {error && <div className="alert alert-danger mt-2">{error}</div>}
           </div>
         </div>
-
       </div>
     </div>
   );

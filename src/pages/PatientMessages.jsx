@@ -14,11 +14,18 @@ export default function PatientMessages() {
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
+  // Keep ref updated
   useEffect(() => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
 
+  // Load conversation
   useEffect(() => {
+    if (!currentUser || !currentUser.id) {
+      console.log("No user — skipping patient conversation load");
+      return;
+    }
+
     const loadConversation = async () => {
       try {
         const data = await getPatientConversation(currentUser.id);
@@ -28,10 +35,13 @@ export default function PatientMessages() {
         setError("Failed to fetch conversation.");
       }
     };
-    loadConversation();
-  }, []);
 
+    loadConversation();
+  }, [currentUser?.id]);
+
+  // Load messages
   useEffect(() => {
+    if (!currentUser || !currentUser.id) return;
     if (!conversationId) return;
 
     const loadMessages = async () => {
@@ -49,14 +59,21 @@ export default function PatientMessages() {
     };
 
     loadMessages();
-  }, [conversationId]);
+  }, [conversationId, currentUser?.id]);
 
+  // WebSocket connection
   useEffect(() => {
+    if (!currentUser || !currentUser.id) {
+      console.log("No user — skipping WebSocket connection (patient)");
+      return;
+    }
+
     connectWebSocket(
       currentUser.id,
       async (msg) => {
         if (msg.conversationId === conversationIdRef.current) {
           setMessages((prev) => [...prev, msg]);
+
           await markMessagesAsRead(msg.conversationId, currentUser.id);
           const updated = await getMessages(msg.conversationId, currentUser.id);
           setMessages(updated);
@@ -69,19 +86,21 @@ export default function PatientMessages() {
         }
       }
     );
-  }, []);
+  }, [currentUser?.id]);
 
+  // Auto-scroll
   useEffect(() => {
     chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
   }, [messages]);
 
   const handleSend = () => {
     if (!inputText.trim()) return;
+    if (!conversationId || !currentUser || !currentUser.id) return;
+
     sendMessageWS(conversationId, currentUser.id, inputText);
     setInputText("");
   };
 
-  // ⭐ NEW: Enter-to-send
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -89,11 +108,16 @@ export default function PatientMessages() {
     }
   };
 
-  if (!currentUser) return <div>Please log in.</div>;
+  if (!currentUser) {
+    return (
+      <div className="container mt-3">
+        <div className="alert alert-warning">Please log in to view messages.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mt-3 mb-5">
-
       {error && <div className="alert alert-danger">{error}</div>}
 
       <div className="card shadow-sm mx-auto w-100" style={{ maxWidth: "600px" }}>
@@ -140,7 +164,7 @@ export default function PatientMessages() {
               placeholder="Type a message..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyPress}   // ⭐ Enter-to-send
+              onKeyDown={handleKeyPress}
             />
             <button className="btn btn-primary" onClick={handleSend}>
               Send
