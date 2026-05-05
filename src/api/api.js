@@ -38,10 +38,8 @@ export const getDoctorConversations = async (doctorId) => {
 };
 
 // MESSAGES
-export const getMessages = async (conversationId, userId) => {
-  const res = await api.get(`/messages/conversation/${conversationId}`, {
-    params: { userId },
-  });
+export const getMessages = async (conversationId) => {
+  const res = await api.get(`/messages/conversation/${conversationId}`);
   return res.data;
 };
 
