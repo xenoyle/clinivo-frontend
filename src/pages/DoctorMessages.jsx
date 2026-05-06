@@ -1,25 +1,28 @@
 import React, { useEffect, useState, useRef } from "react";
 import { connectWebSocket, sendMessageWS } from "../services/websocket";
-import { getMessages, getDoctorConversations } from "../api/api";
+import {
+  getMessages,
+  getAllPatients,
+  getDoctorConversations,
+  createConversation,
+  markMessagesAsRead
+} from "../api/api";
 import { Link } from "react-router-dom";
 import notifySound from "../assets/notify.wav";
 
 export default function DoctorMessages() {
-  const [conversations, setConversations] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [conversationMap, setConversationMap] = useState({});
+  const [activePatientId, setActivePatientId] = useState(null);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [error, setError] = useState(null);
 
-  // Search state
   const [searchTerm, setSearchTerm] = useState("");
+  const [unread, setUnread] = useState({}); // keyed by conversationId
 
-  // Sound notification
   const notificationAudio = useRef(new Audio(notifySound));
-
-  // Unread state
-  const [unread, setUnread] = useState({});
-
   const chatRef = useRef(null);
   const conversationIdRef = useRef(null);
 
@@ -29,42 +32,114 @@ export default function DoctorMessages() {
     conversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
 
-  // Load doctor's conversations
+  // Load patients + conversations
   useEffect(() => {
-    const loadConversations = async () => {
+    if (!currentUser || !currentUser.id) {
+      console.log("No user — skipping doctor data load");
+      return;
+    }
+
+    const loadData = async () => {
       try {
-        const data = await getDoctorConversations(currentUser.id);
+        const patientData = await getAllPatients();
+        const convData = await getDoctorConversations(currentUser.id);
 
-        if (Array.isArray(data)) {
-          setConversations(data);
+        setPatients(Array.isArray(patientData) ? patientData : []);
 
-          if (data.length > 0) {
-            setActiveConversationId(data[0].id);
-          }
-        } else {
-          console.error("Expected array but got:", data);
-          setConversations([]);
+        if (Array.isArray(patientData) && patientData.length > 0) {
+          setActivePatientId(patientData[0].id);
         }
+
+        const map = {};
+        const unreadMap = {};
+
+        if (Array.isArray(convData)) {
+          convData.forEach((conv) => {
+            map[conv.patientId] = conv.id;
+
+            // backend unread flag
+            if (conv.hasUnread) {
+              unreadMap[conv.id] = true;
+            }
+          });
+        }
+
+        setConversationMap(map);
+        setUnread(unreadMap);
+
       } catch (err) {
-        console.error("Conversation fetch error:", err);
-        setError("Failed to fetch conversations.");
+        console.error("Data fetch error:", err);
+        setError("Failed to fetch data.");
       }
     };
 
-    loadConversations();
-  }, []);
+    loadData();
+  }, [currentUser?.id]);
 
-  // Load messages for selected conversation
+  // Handle patient selection
   useEffect(() => {
+    if (!currentUser || !currentUser.id) return;
+    if (!activePatientId) return;
+
+    const handlePatientClick = async () => {
+      try {
+        if (conversationMap[activePatientId]) {
+          const convId = conversationMap[activePatientId];
+          setActiveConversationId(convId);
+
+          // clear unread for this conversation
+          setUnread((prev) => ({
+            ...prev,
+            [convId]: false
+          }));
+
+        } else {
+          const newConv = await createConversation(currentUser.id, activePatientId);
+
+          setActiveConversationId(newConv.id);
+          setConversationMap((prev) => ({
+            ...prev,
+            [activePatientId]: newConv.id,
+          }));
+
+          // new conversation = no unread
+          setUnread((prev) => ({
+            ...prev,
+            [newConv.id]: false
+          }));
+        }
+      } catch (err) {
+        console.error("Error handling patient click:", err);
+        setError("Failed to create or load conversation.");
+      }
+    };
+
+    handlePatientClick();
+  }, [activePatientId, currentUser?.id, conversationMap]);
+
+  // Load messages
+  useEffect(() => {
+    if (!currentUser || !currentUser.id) return;
     if (!activeConversationId) return;
 
     const loadMessages = async () => {
       try {
-        const data = await getMessages(activeConversationId);
+        const data = await getMessages(activeConversationId, currentUser.id);
         setMessages(data);
 
-        // Clear unread when opening the conversation
-        setUnread((prev) => ({ ...prev, [activeConversationId]: false }));
+        // mark as read server-side
+        await markMessagesAsRead(activeConversationId, currentUser.id);
+
+        // refresh messages after marking read
+        const updated = await getMessages(activeConversationId, currentUser.id);
+        setMessages(updated);
+
+        // clear unread badge
+        setUnread((prev) => ({
+          ...prev,
+          [activeConversationId]: false
+        }));
+
       } catch (err) {
         console.error("Messages fetch error:", err);
         setError("Failed to fetch messages.");
@@ -72,33 +147,57 @@ export default function DoctorMessages() {
     };
 
     loadMessages();
-  }, [activeConversationId]);
+  }, [activeConversationId, currentUser?.id]);
 
-  // Connect WebSocket ONCE
+  // WebSocket
   useEffect(() => {
-    connectWebSocket(currentUser.id, (msg) => {
-      console.log("Doctor WS received:", msg);
+    if (!currentUser || !currentUser.id) {
+      console.log("No user — skipping WebSocket connection (doctor)");
+      return;
+    }
 
-      const convId = msg.conversationId;
+    connectWebSocket(
+      currentUser.id,
 
-      // If message is for a different conversation → mark unread + play sound
-      if (convId !== conversationIdRef.current) {
-        setUnread((prev) => ({ ...prev, [convId]: true }));
+      // incoming message
+      async (msg) => {
+        if (msg.conversationId === conversationIdRef.current) {
+          // message belongs to open conversation
+          setMessages((prev) => [...prev, msg]);
 
-        try {
-          notificationAudio.current.currentTime = 0;
-          notificationAudio.current.play();
-        } catch (err) {
-          console.warn("Audio playback blocked:", err);
+          await markMessagesAsRead(msg.conversationId, currentUser.id);
+          const updated = await getMessages(msg.conversationId, currentUser.id);
+          setMessages(updated);
+
+          // ensure unread cleared
+          setUnread((prev) => ({
+            ...prev,
+            [msg.conversationId]: false
+          }));
+
+        } else {
+          // message belongs to another conversation
+          setUnread((prev) => ({
+            ...prev,
+            [msg.conversationId]: true
+          }));
+
+          try {
+            notificationAudio.current.currentTime = 0;
+            notificationAudio.current.play();
+          } catch { }
         }
+      },
 
-        return;
+      // conversation updated
+      async (convId) => {
+        if (convId === conversationIdRef.current) {
+          const updated = await getMessages(convId, currentUser.id);
+          setMessages(updated);
+        }
       }
-
-      // If it's for the active conversation → append normally
-      setMessages((prev) => [...prev, msg]);
-    });
-  }, []);
+    );
+  }, [currentUser?.id]);
 
   // Auto-scroll
   useEffect(() => {
@@ -107,28 +206,38 @@ export default function DoctorMessages() {
 
   const handleSend = () => {
     if (!inputText.trim()) return;
-
-    console.log("Doctor sending to conversation:", activeConversationId);
-
+    if (!activeConversationId || !currentUser || !currentUser.id) return;
     sendMessageWS(activeConversationId, currentUser.id, inputText);
     setInputText("");
   };
 
-  const activeConversation = conversations.find(
-    (c) => c.id === activeConversationId
-  );
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
-  // Filter conversations by patient name
-  const filteredConversations = conversations.filter((c) => {
-    const fullName = `${c.patient?.firstName} ${c.patient?.lastName}`.toLowerCase();
+  const activePatient = patients.find((p) => p.id === activePatientId);
+
+  const filteredPatients = patients.filter((p) => {
+    const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
     return fullName.includes(searchTerm.toLowerCase());
   });
+
+  if (!currentUser) {
+    return (
+      <div className="container mt-3">
+        <div className="alert alert-warning">Please log in to view messages.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="container-fluid mt-3">
       <div className="row" style={{ height: "80vh" }}>
         {/* Patient Sidebar */}
-        <div className="col-md-3 border-end d-flex flex-column">
+        <div className="col-12 col-md-3 border-end d-flex flex-column mb-3 mb-md-0">
           <div className="p-2 d-flex justify-content-between align-items-center">
             <h6 className="mb-0">Patients</h6>
             <Link to="/settings" className="btn btn-sm btn-outline-secondary">
@@ -147,37 +256,42 @@ export default function DoctorMessages() {
           </div>
 
           <div className="list-group list-group-flush overflow-auto">
-            {Array.isArray(filteredConversations) &&
-              filteredConversations.map((c) => (
+            {filteredPatients.map((p) => {
+              const convId = conversationMap[p.id];
+              const hasUnread = unread[convId];
+
+              return (
                 <button
-                  key={c.id}
-                  className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center
-                    ${activeConversationId === c.id ? "active" : ""}
-                    ${unread[c.id] ? "list-group-item-warning" : ""}
-                  `}
+                  key={p.id}
+                  className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center 
+                    ${activePatientId === p.id ? "active" : ""}`}
                   onClick={() => {
-                    setActiveConversationId(c.id);
-                    setUnread((prev) => ({ ...prev, [c.id]: false }));
+                    setActivePatientId(p.id);
+
+                    if (convId) {
+                      setUnread((prev) => ({
+                        ...prev,
+                        [convId]: false
+                      }));
+                    }
                   }}
                 >
-                  <strong>
-                    {c.patient?.firstName} {c.patient?.lastName}
-                  </strong>
+                  <strong>{p.firstName} {p.lastName}</strong>
 
-                  {unread[c.id] && (
+                  {hasUnread && (
                     <span className="badge bg-danger rounded-pill">New</span>
                   )}
                 </button>
-              ))}
+              );
+            })}
           </div>
         </div>
 
         {/* Chat Area */}
-        <div className="col-md-9 d-flex flex-column">
+        <div className="col-12 col-md-9 d-flex flex-column">
           <div className="p-3 border-bottom bg-white">
             <h5 className="mb-0">
-              {activeConversation?.patient?.firstName}{" "}
-              {activeConversation?.patient?.lastName}
+              {activePatient?.firstName} {activePatient?.lastName}
             </h5>
           </div>
 
@@ -185,13 +299,14 @@ export default function DoctorMessages() {
             ref={chatRef}
             className="card-body bg-light"
             style={{
-              height: "400px",
+              height: "60vh",
               overflowY: "auto",
               display: "flex",
               flexDirection: "column",
+              padding: "1rem"   // ⭐ FIX: matches patient view spacing
             }}
           >
-            {messages.map((m) => (
+            {messages.map((m, index) => (
               <div
                 key={m.id}
                 className={
@@ -202,6 +317,12 @@ export default function DoctorMessages() {
                 style={{ maxWidth: "60%" }}
               >
                 <p className="mb-0">{m.content}</p>
+
+                {m.senderId === currentUser.id &&
+                  m.read &&
+                  index === messages.length - 1 && (
+                    <small className="text-light d-block mt-1">Seen</small>
+                  )}
               </div>
             ))}
           </div>
@@ -214,11 +335,13 @@ export default function DoctorMessages() {
                 placeholder="Type a message..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={handleKeyPress}
               />
               <button className="btn btn-dark" onClick={handleSend}>
                 Send Message
               </button>
             </div>
+
             {error && <div className="alert alert-danger mt-2">{error}</div>}
           </div>
         </div>

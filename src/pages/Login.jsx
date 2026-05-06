@@ -14,11 +14,23 @@ export default function Login() {
 
     try {
       const data = await loginUser(email, password);
+
       if (!data) {
         setError("Invalid email or password.");
         return;
       }
+
+      // Clear any leftover WebSocket connections from previous sessions
+      if (window.__wsConnections) {
+        Object.values(window.__wsConnections).forEach((client) => {
+          try { client.disconnect(); } catch { }
+        });
+        window.__wsConnections = {};
+      }
+
+      // Save user
       localStorage.setItem("user", JSON.stringify(data));
+
     } catch (err) {
       console.error("Login error:", err);
       setError("Invalid email or password.");
@@ -26,6 +38,7 @@ export default function Login() {
     }
 
     const user = JSON.parse(localStorage.getItem("user"));
+
     if (user.role === "PATIENT") {
       navigate("/patient-messages");
     } else if (user.role === "DOCTOR") {
@@ -36,10 +49,12 @@ export default function Login() {
   };
 
   return (
-    <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-4 card p-4 shadow-sm">
+    <div className="container d-flex justify-content-center align-items-center min-vh-100">
+      <div className="row w-100 justify-content-center">
+        <div className="col-12 col-sm-10 col-md-6 col-lg-4 card p-4 shadow-sm">
+
           <h2 className="text-center mb-4">Clinivo Login</h2>
+
           <form onSubmit={handleLogin}>
             <div className="mb-3 text-start">
               <label className="form-label">Email Address</label>
@@ -52,6 +67,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+
             <div className="mb-3 text-start">
               <label className="form-label">Password</label>
               <input
@@ -63,18 +79,24 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+
             <button type="submit" className="btn btn-primary w-100 mb-2">
               Login
             </button>
+
             <div className="text-center">
               <a href="#" className="text-decoration-none small">
                 Forgot Password?
               </a>
             </div>
+
             {error && <div className="alert alert-danger mt-2">{error}</div>}
           </form>
+
           <hr />
+
           <p className="text-center">Don't have an account?</p>
+
           <button
             onClick={() => navigate("/register")}
             className="btn btn-outline-secondary w-100"
